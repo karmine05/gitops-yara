@@ -7,6 +7,43 @@
 -- agent those tables do not exist and a direct reference would fail the whole
 -- query. Existence is checked through osquery_registry instead.
 -- ============================================================================
+--
+-- ############################################################################
+-- WHY EVERY EVENTED QUERY BELOW HAS "WHERE time > 0"
+-- ----------------------------------------------------------------------------
+-- osquery's EventSubscriberPlugin::genTable does this:
+--
+--     bool can_optimize{true};
+--     if (context.constraints["time"].getAll().size() > 0) {
+--       can_optimize = false;
+--     }
+--
+-- and generateRows then does:
+--
+--     if (can_optimize && shouldOptimize()) {   // shouldOptimize = isDaemon() && events_optimize
+--       // "only emit events since the last query"
+--       start_time = optimize_time - 1;
+--     }
+--
+-- So in osqueryd - which is what runs Fleet live AND scheduled queries - an
+-- evented-table query with NO time constraint returns ONLY events since the
+-- last time that query ran. The cursor lives in RocksDB and SURVIVES RESTARTS.
+-- Worse, after all registered queries have run, expireEventBatches() purges
+-- what was read.
+--
+-- Practical effect: "SELECT count(*) FROM es_process_events" returns a real
+-- number the first time and 0 on every rerun. It looks exactly like a broken
+-- publisher. Adding any time constraint sets can_optimize=false and returns
+-- the whole buffer.
+--
+-- Use "WHERE time > 0" for verification. Leave it OFF for real scheduled
+-- detection queries, where the since-last-run behaviour is what you want.
+--
+-- Cross-check: osqueryi is not the daemon, so isDaemon() is false and it never
+-- optimizes. If `sudo orbit shell` shows events and Fleet shows none, this is
+-- why - not a broken publisher.
+-- ############################################################################
+
 
 -- ####################### Q1 - ALL PLATFORMS ################################
 SELECT 'agent_version' AS check_name,
@@ -34,39 +71,39 @@ UNION ALL SELECT 'osqueryd_resident_mb',
 
 -- ####################### Q2 - macOS ########################################
 -- First: touch ~/Downloads/fim-test.txt
-SELECT 'es_process_events' AS tbl, CAST(count(*) AS TEXT) AS n, '>0 (else no Full Disk Access)' AS expected FROM es_process_events
-UNION ALL SELECT 'es_process_file_events', CAST(count(*) AS TEXT), '>0 (else no Full Disk Access)' FROM es_process_file_events
-UNION ALL SELECT 'file_events (all)',      CAST(count(*) AS TEXT), '>0' FROM file_events
+SELECT 'es_process_events' AS tbl, CAST(count(*) AS TEXT) AS n, '>0 (else no Full Disk Access)' AS expected FROM es_process_events WHERE time > 0
+UNION ALL SELECT 'es_process_file_events', CAST(count(*) AS TEXT), '>0 (else no Full Disk Access)' FROM es_process_file_events WHERE time > 0
+UNION ALL SELECT 'file_events (all)',      CAST(count(*) AS TEXT), '>0' FROM file_events WHERE time > 0
 UNION ALL SELECT 'file_events Mac_Yara_File_Path', CAST(count(*) AS TEXT), '>0 after you touch a file'
-       FROM file_events WHERE category='Mac_Yara_File_Path'
-UNION ALL SELECT 'yara_events',            CAST(count(*) AS TEXT), '0 - correct, v4 is on-demand only' FROM yara_events;
+       FROM file_events WHERE time > 0 AND category='Mac_Yara_File_Path'
+UNION ALL SELECT 'yara_events',            CAST(count(*) AS TEXT), '0 - correct, v4 is on-demand only' FROM yara_events WHERE time > 0;
 
 -- ####################### Q3 - Linux ########################################
 -- First: touch /tmp/fim-test.txt
-SELECT 'file_events (all)' AS tbl, CAST(count(*) AS TEXT) AS n, '>0' AS expected FROM file_events
+SELECT 'file_events (all)' AS tbl, CAST(count(*) AS TEXT) AS n, '>0' AS expected FROM file_events WHERE time > 0
 UNION ALL SELECT 'file_events ubuntu_file_events', CAST(count(*) AS TEXT), '>0 after you touch a file'
-       FROM file_events WHERE category='ubuntu_file_events'
-UNION ALL SELECT 'process_events',      CAST(count(*) AS TEXT), '0 - audit off by design' FROM process_events
-UNION ALL SELECT 'socket_events',       CAST(count(*) AS TEXT), '0 - audit off by design' FROM socket_events
-UNION ALL SELECT 'user_events',         CAST(count(*) AS TEXT), '0 - audit off by design' FROM user_events
-UNION ALL SELECT 'process_file_events', CAST(count(*) AS TEXT), '0 - audit off by design' FROM process_file_events
+       FROM file_events WHERE time > 0 AND category='ubuntu_file_events'
+UNION ALL SELECT 'process_events',      CAST(count(*) AS TEXT), '0 - audit off by design' FROM process_events WHERE time > 0
+UNION ALL SELECT 'socket_events',       CAST(count(*) AS TEXT), '0 - audit off by design' FROM socket_events WHERE time > 0
+UNION ALL SELECT 'user_events',         CAST(count(*) AS TEXT), '0 - audit off by design' FROM user_events WHERE time > 0
+UNION ALL SELECT 'process_file_events', CAST(count(*) AS TEXT), '0 - audit off by design' FROM process_file_events WHERE time > 0
 UNION ALL SELECT 'BPF CANARY: bpf table present',
        (SELECT CAST(count(*) AS TEXT) FROM osquery_registry WHERE registry='table' AND name='bpf_process_events'),
        '1 = fine. 0 = NO Linux process/socket eventing at all';
 
 -- ####################### Q4 - Windows ######################################
 -- First: echo test > %USERPROFILE%\Downloads\fim-test.txt  &&  nslookup example.com
-SELECT 'ntfs_journal_events' AS tbl, CAST(count(*) AS TEXT) AS n, '>0 after you create a file' AS expected FROM ntfs_journal_events
+SELECT 'ntfs_journal_events' AS tbl, CAST(count(*) AS TEXT) AS n, '>0 after you create a file' AS expected FROM ntfs_journal_events WHERE time > 0
 UNION ALL SELECT 'ntfs category=windows_file_events', CAST(count(*) AS TEXT), '>0 - proves rename + backslash fix'
-       FROM ntfs_journal_events WHERE category='windows_file_events'
+       FROM ntfs_journal_events WHERE time > 0 AND category='windows_file_events'
 UNION ALL SELECT 'ntfs category=Win_Yara_File_Path (old)', CAST(count(*) AS TEXT), '0 - old name is gone'
-       FROM ntfs_journal_events WHERE category='Win_Yara_File_Path'
-UNION ALL SELECT 'windows_events',      CAST(count(*) AS TEXT), '>0' FROM windows_events
+       FROM ntfs_journal_events WHERE time > 0 AND category='Win_Yara_File_Path'
+UNION ALL SELECT 'windows_events',      CAST(count(*) AS TEXT), '>0' FROM windows_events WHERE time > 0
 UNION ALL SELECT 'windows_events 4104', CAST(count(*) AS TEXT), '0 - channel dropped in v4'
-       FROM windows_events WHERE eventid=4104
-UNION ALL SELECT 'powershell_events',   CAST(count(*) AS TEXT), '0 unless Script Block Logging on' FROM powershell_events
-UNION ALL SELECT 'process_etw_events',  CAST(count(*) AS TEXT), '>0' FROM process_etw_events
-UNION ALL SELECT 'dns_lookup_events',   CAST(count(*) AS TEXT), '>0 after nslookup' FROM dns_lookup_events;
+       FROM windows_events WHERE time > 0 AND eventid=4104
+UNION ALL SELECT 'powershell_events',   CAST(count(*) AS TEXT), '0 unless Script Block Logging on' FROM powershell_events WHERE time > 0
+UNION ALL SELECT 'process_etw_events',  CAST(count(*) AS TEXT), '>0' FROM process_etw_events WHERE time > 0
+UNION ALL SELECT 'dns_lookup_events',   CAST(count(*) AS TEXT), '>0 after nslookup' FROM dns_lookup_events WHERE time > 0;
 
 -- ####################### Q5 - ATC macOS ####################################
 -- Run separately: if an ATC table failed to register, this query errors and

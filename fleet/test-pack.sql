@@ -8,6 +8,43 @@
 -- Apply v4 and RESTART fleetd before testing. command_line_flags do not take
 -- effect without a restart.
 -- ============================================================================
+--
+-- ############################################################################
+-- WHY EVERY EVENTED QUERY BELOW HAS "WHERE time > 0"
+-- ----------------------------------------------------------------------------
+-- osquery's EventSubscriberPlugin::genTable does this:
+--
+--     bool can_optimize{true};
+--     if (context.constraints["time"].getAll().size() > 0) {
+--       can_optimize = false;
+--     }
+--
+-- and generateRows then does:
+--
+--     if (can_optimize && shouldOptimize()) {   // shouldOptimize = isDaemon() && events_optimize
+--       // "only emit events since the last query"
+--       start_time = optimize_time - 1;
+--     }
+--
+-- So in osqueryd - which is what runs Fleet live AND scheduled queries - an
+-- evented-table query with NO time constraint returns ONLY events since the
+-- last time that query ran. The cursor lives in RocksDB and SURVIVES RESTARTS.
+-- Worse, after all registered queries have run, expireEventBatches() purges
+-- what was read.
+--
+-- Practical effect: "SELECT count(*) FROM es_process_events" returns a real
+-- number the first time and 0 on every rerun. It looks exactly like a broken
+-- publisher. Adding any time constraint sets can_optimize=false and returns
+-- the whole buffer.
+--
+-- Use "WHERE time > 0" for verification. Leave it OFF for real scheduled
+-- detection queries, where the since-last-run behaviour is what you want.
+--
+-- Cross-check: osqueryi is not the daemon, so isDaemon() is false and it never
+-- optimizes. If `sudo orbit shell` shows events and Fleet shows none, this is
+-- why - not a broken publisher.
+-- ############################################################################
+
 
 
 -- ############################################################################
@@ -70,10 +107,10 @@ FROM osquery_info i JOIN processes p ON p.pid = i.pid;
 
 -- ---------------------------------------------------------------- macOS ----
 -- 1.1  Consolidated macOS evented count
-SELECT 'es_process_events'      AS tbl, count(*) AS n FROM es_process_events
-UNION ALL SELECT 'es_process_file_events', count(*) FROM es_process_file_events
-UNION ALL SELECT 'file_events',            count(*) FROM file_events
-UNION ALL SELECT 'yara_events',            count(*) FROM yara_events;
+SELECT 'es_process_events'      AS tbl, count(*) AS n FROM es_process_events WHERE time > 0
+UNION ALL SELECT 'es_process_file_events', count(*) FROM es_process_file_events WHERE time > 0
+UNION ALL SELECT 'file_events',            count(*) FROM file_events WHERE time > 0
+UNION ALL SELECT 'yara_events',            count(*) FROM yara_events WHERE time > 0;
 -- yara_events = 0 is CORRECT in v4: continuous YARA is off by design.
 -- es_* = 0 usually means Full Disk Access is not granted to the fleetd
 -- osqueryd binary. The flag alone does not enable capture.
@@ -81,32 +118,32 @@ UNION ALL SELECT 'yara_events',            count(*) FROM yara_events;
 -- 1.2  macOS process eventing detail
 SELECT datetime(time,'unixepoch') AS t, event_type, pid, path, cmdline,
        username, signing_id, team_id, platform_binary
-FROM es_process_events ORDER BY time DESC LIMIT 20;
+FROM es_process_events WHERE time > 0 ORDER BY time DESC LIMIT 20;
 
 -- 1.3  macOS ES file eventing detail
 SELECT datetime(time,'unixepoch') AS t, event_type, pid, path, dest_filename
-FROM es_process_file_events ORDER BY time DESC LIMIT 20;
+FROM es_process_file_events WHERE time > 0 ORDER BY time DESC LIMIT 20;
 
 -- 1.4  macOS FIM. Touch a file first: touch ~/Downloads/fim-test.txt
 SELECT datetime(time,'unixepoch') AS t, target_path, category, action, size, sha256
-FROM file_events WHERE category = 'Mac_Yara_File_Path'
+FROM file_events WHERE time > 0 AND category = 'Mac_Yara_File_Path'
 ORDER BY time DESC LIMIT 20;
 
 
 -- ---------------------------------------------------------------- Linux ----
 -- 1.5  Consolidated Linux evented count. Read the zeros carefully.
-SELECT 'file_events'        AS tbl, count(*) AS n FROM file_events
-UNION ALL SELECT 'process_events',      count(*) FROM process_events
-UNION ALL SELECT 'socket_events',       count(*) FROM socket_events
-UNION ALL SELECT 'user_events',         count(*) FROM user_events
-UNION ALL SELECT 'process_file_events', count(*) FROM process_file_events;
+SELECT 'file_events'        AS tbl, count(*) AS n FROM file_events WHERE time > 0
+UNION ALL SELECT 'process_events',      count(*) FROM process_events WHERE time > 0
+UNION ALL SELECT 'socket_events',       count(*) FROM socket_events WHERE time > 0
+UNION ALL SELECT 'user_events',         count(*) FROM user_events WHERE time > 0
+UNION ALL SELECT 'process_file_events', count(*) FROM process_file_events WHERE time > 0;
 -- The last four SHOULD be 0: the audit family is off by decision
 -- (disable_audit defaults true). That is the documented accepted gap.
 -- file_events > 0 is the one that must be non-zero.
 
 -- 1.6  Linux FIM. Touch a file first: touch /tmp/fim-test.txt
 SELECT datetime(time,'unixepoch') AS t, target_path, category, action, size, sha256
-FROM file_events WHERE category = 'ubuntu_file_events'
+FROM file_events WHERE time > 0 AND category = 'ubuntu_file_events'
 ORDER BY time DESC LIMIT 20;
 
 -- 1.7  Linux process/socket eventing - SEE SECTION 4 BEFORE TRUSTING THIS
@@ -115,50 +152,50 @@ SELECT count(*) AS n FROM bpf_process_events;
 
 -- -------------------------------------------------------------- Windows ----
 -- 1.8  Consolidated Windows evented count
-SELECT 'ntfs_journal_events' AS tbl, count(*) AS n FROM ntfs_journal_events
-UNION ALL SELECT 'windows_events',     count(*) FROM windows_events
-UNION ALL SELECT 'powershell_events',  count(*) FROM powershell_events
-UNION ALL SELECT 'process_etw_events', count(*) FROM process_etw_events
-UNION ALL SELECT 'dns_lookup_events',  count(*) FROM dns_lookup_events;
+SELECT 'ntfs_journal_events' AS tbl, count(*) AS n FROM ntfs_journal_events WHERE time > 0
+UNION ALL SELECT 'windows_events',     count(*) FROM windows_events WHERE time > 0
+UNION ALL SELECT 'powershell_events',  count(*) FROM powershell_events WHERE time > 0
+UNION ALL SELECT 'process_etw_events', count(*) FROM process_etw_events WHERE time > 0
+UNION ALL SELECT 'dns_lookup_events',  count(*) FROM dns_lookup_events WHERE time > 0;
 
 -- 1.9  NTFS journal + the RENAMED category.
 --      Create a file first: echo test > %USERPROFILE%\Downloads\fim-test.txt
 SELECT category, action, count(*) AS n
-FROM ntfs_journal_events GROUP BY category, action ORDER BY n DESC;
+FROM ntfs_journal_events WHERE time > 0 GROUP BY category, action ORDER BY n DESC;
 -- Expect category = windows_file_events (renamed from Win_Yara_File_Path in v3).
 -- Zero rows here also means the v2 backslash fix has not taken effect.
 
 -- 1.10 NTFS journal detail
 SELECT datetime(time,'unixepoch') AS t, action, category, path, old_path, drive_letter
-FROM ntfs_journal_events ORDER BY time DESC LIMIT 20;
+FROM ntfs_journal_events WHERE time > 0 ORDER BY time DESC LIMIT 20;
 
 -- 1.11 Windows event log channels
 SELECT source, provider_name, eventid, count(*) AS n
-FROM windows_events GROUP BY source, provider_name, eventid
+FROM windows_events WHERE time > 0 GROUP BY source, provider_name, eventid
 ORDER BY n DESC LIMIT 25;
 -- Expect only Security, Application, System. If you see
 -- Microsoft-Windows-PowerShell/Operational the channel list did not update.
 
 -- 1.12 PowerShell de-duplication check
 SELECT
-  (SELECT count(*) FROM windows_events WHERE eventid = 4104) AS in_windows_events,
-  (SELECT count(*) FROM powershell_events)                   AS in_powershell_events;
+  (SELECT count(*) FROM windows_events WHERE time > 0 AND eventid = 4104) AS in_windows_events,
+  (SELECT count(*) FROM powershell_events WHERE time > 0)    AS in_powershell_events;
 -- in_windows_events must be 0 in v4. in_powershell_events stays 0 unless
 -- Script Block Logging is enabled by GPO - that is a host setting, not a flag.
 
 -- 1.13 PowerShell script blocks
 SELECT datetime(time,'unixepoch') AS t, script_name, script_path,
        cosine_similarity, substr(script_text,1,200) AS script_head
-FROM powershell_events ORDER BY time DESC LIMIT 10;
+FROM powershell_events WHERE time > 0 ORDER BY time DESC LIMIT 10;
 
 -- 1.14 ETW process events
 SELECT datetime(time,'unixepoch') AS t, type, pid, ppid, username,
        token_elevation_type, path, cmdline
-FROM process_etw_events ORDER BY time DESC LIMIT 20;
+FROM process_etw_events WHERE time > 0 ORDER BY time DESC LIMIT 20;
 
 -- 1.15 DNS lookups. Generate one first: nslookup example.com
 SELECT datetime(time,'unixepoch') AS t, pid, path, username, name, type, response
-FROM dns_lookup_events ORDER BY time DESC LIMIT 20;
+FROM dns_lookup_events WHERE time > 0 ORDER BY time DESC LIMIT 20;
 
 
 -- ############################################################################
@@ -253,7 +290,7 @@ WHERE pid = 1234 AND sigurl = 'https://raw.githubusercontent.com/karmine05/gitop
 --      Run this, take a target_path, feed it to 3.2 or 3.3.
 SELECT datetime(time,'unixepoch') AS t, target_path, category, action, size, sha256
 FROM file_events
-WHERE action IN ('CREATED','UPDATED') AND size > 0
+WHERE time > 0 AND action IN ('CREATED','UPDATED') AND size > 0
 ORDER BY time DESC LIMIT 50;
 
 -- 3.7  Confirm the signature-base URL still works alongside your own repo
