@@ -1,0 +1,53 @@
+name: Refresh YARA bundles
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'      # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install yara-python
+        run: pip install yara-python
+
+      - name: Rebuild bundles
+        run: python3 tools/build_bundles.py --out rules --verify
+
+      - name: Fail if any bundle does not compile
+        run: |
+          python3 - <<'PY'
+          import glob, sys, yara
+          bad = []
+          for f in sorted(glob.glob('rules/*.yar')):
+              try:
+                  n = sum(1 for _ in yara.compile(filepath=f))
+                  print(f"{f}: {n} rules")
+              except Exception as e:
+                  bad.append((f, e))
+          for f, e in bad:
+              print(f"COMPILE FAIL {f}: {e}", file=sys.stderr)
+          sys.exit(1 if bad else 0)
+          PY
+
+      - name: Commit if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- rules/; then
+            echo "No upstream change."
+            exit 0
+          fi
+          git add rules/
+          git commit -m "rules: refresh from upstream $(sed -n 's/^commit *//p' rules/MANIFEST.txt)"
+          git push

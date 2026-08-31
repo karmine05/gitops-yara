@@ -1,0 +1,13 @@
+upstream https://github.com/elastic/protections-artifacts.git
+commit   9c334cf8298d9ff7e19c2a50817669072abc2d66
+built    2026-08-31
+
+linux-file-events.yar
+  rules 957  files 274  bytes 774290
+  sha256 d7d6ca1c8f3012e6b2c8ff5749fe3f1db63b8f49c3da17f9f52f7c1ad590c6b7
+macos-file-events.yar
+  rules 150  files 74  bytes 154472
+  sha256 3363a18f947ec46824fd6e9c7854bd58629fc08adc5c7a08525f15c30e49a711
+windows-ondemand.yar
+  rules 2024  files 744  bytes 2543861
+  sha256 c6dcd433044dcfda486c2ef2738f22b00dc63e3d032e3ecd40a63a8760d4fb52

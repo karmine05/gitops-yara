@@ -1,0 +1,298 @@
+# Fleet agent options - v3
+# Updated 2026-08-31. Supersedes v2.
+#
+# v3 changes:
+#   1. Win_Yara_File_Path renamed to windows_file_events. The old name claimed
+#      YARA; the category actually drives ntfs_journal_events. yara_events is
+#      not supported on Windows at all.
+#   2. YARA rules now come from github.com/karmine05/gitops-yara.
+#      - yara_events (macOS, Linux) reads LOCAL files placed by deploy/install-*.sh.
+#        signature_urls cannot feed yara_events - it only backs the on-demand
+#        yara_file table via its sigurl constraint.
+#      - yara_file (all platforms, incl. Windows) uses signature_urls as an
+#        allowlist of URLs an analyst may pass as sigurl.
+#   3. Dead signature_urls removed:
+#      - chronicle/GCTI CobaltStrike path returns 404.
+#      - Yara-Rules/rules index.yar returns a 2022 list of `include` directives
+#        that osquery cannot resolve over HTTP.
+#   4. yara_sigurl_authenticate stays FALSE - see the note at the bottom.
+#
+# Linux eventing stays on BPF. The audit family remains off by decision.
+
+config:
+  options:
+    pack_delimiter: /
+    logger_tls_period: 60
+    distributed_plugin: tls
+    disable_distributed: false
+    logger_tls_endpoint: /api/osquery/log
+    distributed_interval: 60
+    distributed_tls_max_attempts: 3
+  decorators:
+    load:
+      - SELECT uuid AS host_uuid FROM system_info;
+      - SELECT hostname AS hostname FROM system_info;
+
+overrides:
+  platforms:
+
+    darwin:
+      yara:
+        # LOCAL file - this is what yara_events compiles. Placed by
+        # deploy/install-macos.sh, which also restarts fleetd so it recompiles.
+        signatures:
+          macos_malware:
+            - /opt/fleetdm/yara/malware_rules.yar
+        file_paths:
+          Mac_Yara_File_Path:
+            - macos_malware
+        # Allowlist for on-demand scans:
+        #   SELECT * FROM yara_file WHERE path='...' AND sigurl='<one of these>';
+        signature_urls:
+          - https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos-file-events.yar
+          - https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/linux-file-events.yar
+          - https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows-ondemand.yar
+      options:
+        pack_delimiter: /
+        logger_tls_period: 60
+        distributed_plugin: tls
+        disable_distributed: false
+        logger_tls_endpoint: /api/osquery/log
+        distributed_interval: 60
+        distributed_tls_max_attempts: 3
+      decorators:
+        load:
+          - SELECT uuid AS host_uuid FROM system_info;
+          - SELECT hostname AS hostname FROM system_info;
+      file_paths:
+        # Name kept deliberately. Unlike the Windows one this IS accurate -
+        # the category drives both file_events and yara_events on macOS - and
+        # it populates the `category` column, so renaming breaks saved queries.
+        Mac_Yara_File_Path:
+          - /Users/%%/Desktop/%%
+          - /Users/%%/Downloads/%%
+          - /Users/%%/Documents/%%
+      auto_table_construction:
+        quarantine_items:
+          path: >-
+            /Users/%%/Library/Preferences/com.apple.LaunchServices.QuarantineEventsV2
+          query: >-
+            SELECT LSQuarantineEventIdentifier as id, LSQuarantineAgentName as
+            agent_name, LSQuarantineAgentBundleIdentifier as
+            agent_bundle_identifier, LSQuarantineTypeNumber as type,
+            LSQuarantineDataURLString as data_url,LSQuarantineOriginURLString as
+            origin_url, LSQuarantineSenderName as sender_name,
+            LSQuarantineSenderAddress as sender_address, LSQuarantineTimeStamp
+            as timestamp from LSQuarantineEvent
+          columns:
+            - id
+            - type
+            - agent_name
+            - agent_bundle_identifier
+            - timestamp
+            - sender_name
+            - sender_address
+            - origin_url
+            - data_url
+        chrome_url_history:
+          path: /Users/%%/Library/Application Support/Google/Chrome/%%/History
+          query: >-
+            SELECT urls.id id, urls.url url, urls.title title, urls.visit_count
+            visit_count, urls.typed_count typed_count, urls.last_visit_time
+            last_visit_time, urls.hidden hidden, visits.visit_time visit_time,
+            visits.from_visit from_visit, visits.visit_duration visit_duration,
+            visits.transition transition, visit_source.source source FROM urls
+            JOIN visits ON urls.id = visits.url LEFT JOIN visit_source ON
+            visits.id = visit_source.id
+          columns:
+            - id
+            - url
+            - title
+            - visit_count
+            - last_visit_time
+            - hidden
+            - visit_time
+            - from_visit
+            - visit_duration
+            - transition
+            - source
+        firefox_url_history:
+          path: >-
+            /Users/%%/Library/Application
+            Support/Firefox/Profiles/%%/places.sqlite
+          query: |-
+            SELECT guid, url, title, visit_count, last_visit_date, hidden
+            FROM moz_places
+          columns:
+            - guid
+            - url
+            - title
+            - visit_count
+            - last_visit_date
+            - hidden
+        chrome_download_history:
+          path: /Users/%%/Library/Application Support/Google/Chrome/%%/History
+          query: >-
+            SELECT downloads.id id, downloads.current_path,
+            downloads.target_path FROM downloads
+          columns:
+            - id
+            - current_path
+            - target_path
+
+    ubuntu:
+      yara:
+        signatures:
+          linux_malware:
+            - /etc/fleetdm/yara/malware_rules.yar
+        file_paths:
+          ubuntu_file_events:
+            - linux_malware
+        signature_urls:
+          - https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/linux-file-events.yar
+          - https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos-file-events.yar
+          - https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows-ondemand.yar
+      options:
+        pack_delimiter: /
+        logger_tls_period: 60
+        distributed_plugin: tls
+        disable_distributed: false
+        logger_tls_endpoint: /api/osquery/log
+        distributed_interval: 60
+        distributed_tls_max_attempts: 3
+      decorators:
+        load:
+          - SELECT uuid AS host_uuid FROM system_info;
+          - SELECT hostname AS hostname FROM system_info;
+      file_paths:
+        ubuntu_file_events:
+          - /home/ubuntu/%%
+          - /etc/%%
+          - /tmp/%%
+          - /var/tmp/%%
+
+    windows:
+      yara:
+        # No `signatures` and no `file_paths` block here on purpose:
+        # yara_events does not exist on Windows. This allowlist only enables
+        # analyst-run scans through the yara_file table.
+        signature_urls:
+          - https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows-ondemand.yar
+          - https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos-file-events.yar
+          - https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/linux-file-events.yar
+      options:
+        pack_delimiter: /
+        logger_tls_period: 60
+        distributed_plugin: tls
+        disable_distributed: false
+        logger_tls_endpoint: /api/osquery/log
+        distributed_interval: 60
+        distributed_tls_max_attempts: 3
+      decorators:
+        load:
+          - SELECT uuid AS host_uuid FROM system_info;
+          - SELECT hostname AS hostname FROM system_info;
+      file_paths:
+        # RENAMED in v3 from Win_Yara_File_Path. This category drives
+        # ntfs_journal_events, not YARA. Breaking change: the `category` column
+        # value changes, so update any saved query or detection filtering on
+        # 'Win_Yara_File_Path' at the same time you apply this.
+        #
+        # Single-quoted so YAML keeps the backslashes literal.
+        windows_file_events:
+          - 'C:\Users\%%\Desktop\%%'
+          - 'C:\Users\%%\Downloads\%%'
+          - 'C:\Users\%%\Documents\%%'
+      auto_table_construction:
+        edge_url_history:
+          path: 'C:\Users\%%\AppData\Local\Microsoft\Edge\User Data\%%\History'
+          query: >-
+            SELECT urls.url url, urls.title title, urls.last_visit_time
+            last_visit_time, urls.visit_count FROM urls
+          columns:
+            - url
+            - title
+            - last_visit_time
+            - visit_count
+        chrome_url_history:
+          path: 'C:\Users\%%\AppData\Local\Google\Chrome\User Data\%%\History'
+          query: >-
+            SELECT urls.id id, urls.url url, urls.title title, urls.visit_count
+            visit_count, urls.typed_count typed_count, urls.last_visit_time
+            last_visit_time, urls.hidden hidden, visits.visit_time visit_time,
+            visits.from_visit from_visit, visits.visit_duration visit_duration,
+            visits.transition transition, visit_source.source source FROM urls
+            JOIN visits ON urls.id = visits.url LEFT JOIN visit_source ON
+            visits.id = visit_source.id
+          columns:
+            - id
+            - url
+            - title
+            - visit_count
+            - last_visit_time
+            - hidden
+            - visit_time
+            - from_visit
+            - visit_duration
+            - transition
+            - source
+        firefox_url_history:
+          path: 'C:\Users\%%\AppData\Roaming\Mozilla\Firefox\Profiles\%%\places.sqlite'
+          query: |-
+            SELECT guid, url, title, visit_count, last_visit_date, hidden
+            FROM moz_places
+          columns:
+            - guid
+            - url
+            - title
+            - visit_count
+            - last_visit_date
+            - hidden
+        chrome_download_history:
+          path: 'C:\Users\%%\AppData\Local\Google\Chrome\User Data\%%\History'
+          query: >-
+            SELECT downloads.id id, downloads.current_path,
+            downloads.target_path FROM downloads
+          columns:
+            - id
+            - current_path
+            - target_path
+
+command_line_flags:
+  verbose: false
+  events_max: 50000
+  events_expiry: 3600
+  logger_plugin: tls
+  disable_events: false
+  disable_watchdog: true
+
+  # --- Linux ---
+  enable_bpf_events: true          # bpf_process_events, bpf_socket_events
+
+  # --- macOS + Linux ---
+  enable_file_events: true         # file_events, and the trigger for yara_events
+
+  # --- macOS ---
+  disable_endpointsecurity: false      # es_process_events (needs Full Disk Access per host)
+  disable_endpointsecurity_fim: false  # es_process_file_events
+
+  # --- Windows ---
+  enable_ntfs_event_publisher: true          # ntfs_journal_events
+  enable_windows_events_publisher: true      # windows_events
+  enable_windows_events_subscriber: true
+  enable_powershell_events_subscriber: true  # powershell_events (needs Script Block Logging via GPO)
+  enable_process_etw_events: true            # process_etw_events
+  enable_dns_lookup_events: true             # dns_lookup_events
+  windows_event_channels: Security,Application,System
+
+  # --- YARA ---
+  # MUST stay false. This flag does NOT control TLS. Setting it true makes
+  # osquery send a POST with the node key in a JSON body instead of a GET,
+  # for a server that authenticates rule requests. raw.githubusercontent.com
+  # would reject that and every sigurl fetch would fail.
+  # osquery always validates the HTTPS server certificate regardless.
+  yara_sigurl_authenticate: false
+
+  # Throttle between file scans. Default 50ms. Raise it if yara_events costs
+  # too much CPU during bulk file activity; lower it if scans lag behind.
+  yara_delay: 50
