@@ -137,9 +137,9 @@ ran. The cursor lives in RocksDB, survives agent restarts, and
 es_process_events` then gives a real number once and `0` on every rerun,
 which looks exactly like a dead publisher.
 
-Every query in `fleet/health-check.sql` and `fleet/test-pack.sql` carries
-`WHERE time > 0` for this reason. Leave it off for real scheduled detection
-queries, where since-last-run is the behaviour you want.
+Every query in `fleet/health-check.sql`, `fleet/test-pack.sql`, and
+`fleet/detect.sql` carries `WHERE time > 0` for this reason. Leave it off for
+real scheduled detection queries, where since-last-run is the behaviour you want.
 
 `sudo orbit shell` is not the daemon, so it never optimizes. If the shell shows
 events and Fleet shows none, that is this, not a broken publisher.
