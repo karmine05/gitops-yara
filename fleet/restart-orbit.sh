@@ -11,8 +11,8 @@
 # Verified service identities (2026-08-31, live):
 #   linux/ubuntu  systemd service "orbit"        (docker-worker-01)
 #   macos         launchd  com.fleetdm.orbit     (Beast's Mac mini)
-#   windows       Windows service (orbit.exe)    process verified; service
-#                 NAME must be confirmed on the host - see WINDOWS section.
+#   windows       Windows service "Fleet osquery"  verified on WRK-AI
+#                 2026-08-31 (orbit.exe + osqueryd.exe child)
 #
 # Usage:
 #   ./restart-orbit.sh --list                 # show targets, no changes
@@ -110,22 +110,18 @@ mac_local() {
 # ---------------------------------------------------------------- windows
 # Windows has NO remote restart path here (no WinRM/PsHock configured, and
 # live queries to WRK-AI are too slow for service management). Do it in an
-# elevated terminal on the host. Step 1 is mandatory: confirm the service
-# name first, because it is installation-specific.
+# elevated terminal on the host. Service name VERIFIED 2026-08-31 on WRK-AI:
+# "Fleet osquery" (orbit.exe + osqueryd.exe child run under it).
 print_windows() {
   cat <<'EOF'
 WINDOWS (run in an elevated PowerShell on the host):
 
-  1. Confirm the service name (one of these will match):
-       Get-Service -Name orbit
-       Get-Service | Where-Object { $_.Name -like '*orbit*' -or $_.DisplayName -like '*Fleet*' }
+  1. Restart the service (name verified on WRK-AI 2026-08-31):
+       Restart-Service "Fleet osquery" -Force
 
-  2. Restart it (use the name from step 1):
-       Restart-Service -Name orbit -Force
-
-  3. Verify:
-       Get-Service -Name orbit                # Status: Running
-       Get-Process orbit, osqueryd            # both present, osqueryd StartTime is now
+  2. Verify:
+       Get-Service "Fleet osquery"     # Status: Running
+       Get-Process osqueryd            # present, StartTime = now
 EOF
 }
 
