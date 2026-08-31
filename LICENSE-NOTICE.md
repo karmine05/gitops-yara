@@ -1,8 +1,14 @@
 # License notice
 
-The rule bundles under `rules/` come from
-[elastic/protections-artifacts](https://github.com/elastic/protections-artifacts),
-redistributed unmodified.
+The rule bundles under `rules/` come from two upstream projects, each
+redistributed unmodified:
+
+- [elastic/protections-artifacts](https://github.com/elastic/protections-artifacts)
+  (Elastic License 2.0), and
+- [magicsword-io/LOLDrivers](https://github.com/magicsword-io/LOLDrivers)
+  (Apache-2.0), covering vulnerable and malicious Windows kernel drivers.
+
+## Elastic rules (ELv2)
 
 Those rules carry the **Elastic License 2.0 (ELv2)** license.
 Read the terms at https://www.elastic.co/licensing/elastic-license
@@ -25,5 +31,15 @@ Fleet is a device management vendor. Shipping these rules to customers as part
 of a managed offering is the exact shape ELv2 limitation 1 restricts. Internal
 use is not in question; redistribution to customers is. Raise it before any
 customer-facing use.
+
+## LOLDrivers rules (Apache-2.0)
+
+The `windows/loldrivers_*.yar` files come from
+[magicsword-io/LOLDrivers](https://github.com/magicsword-io/LOLDrivers) and
+carry the **Apache-2.0** license (full text at
+https://www.apache.org/licenses/LICENSE-2.0). Apache-2.0 is permissive: the
+only obligations are to keep the license and copyright notices, state changes
+if any, and not use the project's names to endorse a derived product. No
+customer-facing restriction of the ELv2 kind applies to these files.
 
 Every generated bundle carries the license notice in its header. Do not strip it.

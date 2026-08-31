@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Build focused, individually-addressable YARA rule files from
-elastic/protections-artifacts, laid out for on-demand scanning.
+elastic/protections-artifacts and magicsword-io/LOLDrivers, laid out for
+on-demand scanning.
 
 Output:
   rules/<platform>/<category>.yar   focused set, e.g. rules/linux/ransomware.yar
@@ -12,13 +13,21 @@ Each file is fetched directly by URL via the yara_file / yara_process tables.
 osquery matches signature_urls by exact host+scheme and treats the PATH as a
 regex, so one allowlist entry covers this whole tree.
 
-Deterministic: the same upstream commit produces byte-identical output.
+Deterministic: the same upstream commits produce byte-identical output.
 """
 import argparse, hashlib, os, re, subprocess, sys, tempfile
 from datetime import datetime, timezone
 
 UPSTREAM = "https://github.com/elastic/protections-artifacts.git"
 RULES_SUBDIR = os.path.join("yara", "rules")
+LOLDRIVERS = "https://github.com/magicsword-io/LOLDrivers.git"
+# (path in LOLDrivers repo, output path in rules/)
+LOLDRIVERS_FILES = (
+    ("detections/yara/yara-rules_vuln_drivers_strict.yar",
+     "windows/loldrivers_vulndriver.yar"),
+    ("detections/yara/other/yara-rules_mal_drivers_strict.yar",
+     "windows/loldrivers_maldriver.yar"),
+)
 PLATFORMS = ("macos", "linux", "windows", "multi")
 RULE_RE = re.compile(r"^\s*rule\s+([A-Za-z_]\w*)", re.M)
 IMPORT_RE = re.compile(r'^\s*import\s+"([a-z]+)"', re.M)
@@ -28,12 +37,19 @@ def sh(*a):
     return subprocess.run(a, check=True, capture_output=True, text=True).stdout.strip()
 
 
-def fetch(workdir):
-    dest = os.path.join(workdir, "upstream")
+def _clone(url, dest, sparse):
     if not os.path.isdir(dest):
-        sh("git", "clone", "--depth", "1", "--filter=blob:none", "--sparse", "-q", UPSTREAM, dest)
-        sh("git", "-C", dest, "sparse-checkout", "set", "yara")
-    return os.path.join(dest, RULES_SUBDIR), sh("git", "-C", dest, "rev-parse", "HEAD")
+        sh("git", "clone", "--depth", "1", "--filter=blob:none", "--sparse", "-q", url, dest)
+        sh("git", "-C", dest, "sparse-checkout", "set", sparse)
+    return sh("git", "-C", dest, "rev-parse", "HEAD")
+
+
+def fetch(workdir):
+    elastic = os.path.join(workdir, "upstream")
+    loldrivers = os.path.join(workdir, "loldrivers")
+    e_sha = _clone(UPSTREAM, elastic, "yara")
+    l_sha = _clone(LOLDRIVERS, loldrivers, "detections")
+    return os.path.join(elastic, RULES_SUBDIR), e_sha, loldrivers, l_sha
 
 
 def split_name(fn):
@@ -47,7 +63,7 @@ def split_name(fn):
     return plat, cat
 
 
-def header(rel, sha, stamp, nrules, nfiles, base_url):
+def header(rel, source, sha, stamp, nrules, nfiles, base_url, license_note):
     return (
         "/*\n"
         " * %s\n"
@@ -59,9 +75,9 @@ def header(rel, sha, stamp, nrules, nfiles, base_url):
         " * Generated: %s\n"
         " * Rules:     %d   Upstream files: %d\n"
         " *\n"
-        " * Upstream rules are licensed under the Elastic License 2.0.\n"
+        " * %s\n"
         " * See LICENSE-NOTICE.md. Rules are redistributed unmodified.\n"
-        " */\n\n" % (rel, base_url, rel, UPSTREAM, sha, stamp, nrules, nfiles)
+        " */\n\n" % (rel, base_url, rel, source, sha, stamp, nrules, nfiles, license_note)
     )
 
 
@@ -75,12 +91,26 @@ def emit(path, rel, chunks, sha, stamp, base_url):
         nrules += len(names)
         imports.update(IMPORT_RE.findall(body))
         kept.append("// ---- %s ----\n%s\n" % (fn, body.rstrip()))
-    text = header(rel, sha, stamp, nrules, len(kept), base_url) + "\n".join(kept)
+    text = header(rel, UPSTREAM, sha, stamp, nrules, len(kept), base_url,
+                  "Upstream rules are licensed under the Elastic License 2.0.") \
+        + "\n".join(kept)
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(text)
     return {"rules": nrules, "files": len(kept), "bytes": len(text.encode()),
             "imports": sorted(imports), "sha256": hashlib.sha256(text.encode()).hexdigest()}
+
+
+def emit_raw(path, rel, source, body, sha, stamp, base_url, license_note):
+    """Write a complete upstream rule file verbatim with the standard header."""
+    nrules = len(RULE_RE.findall(body))
+    imports = sorted(IMPORT_RE.findall(body))
+    text = header(rel, source, sha, stamp, nrules, 1, base_url, license_note) + body
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(text)
+    return {"rules": nrules, "files": 1, "bytes": len(text.encode()),
+            "imports": imports, "sha256": hashlib.sha256(text.encode()).hexdigest()}
 
 
 def main():
@@ -95,7 +125,7 @@ def main():
     work = a.work or tempfile.mkdtemp(prefix="yb-")
     os.makedirs(work, exist_ok=True)
     out = os.path.abspath(a.out)
-    src, sha = fetch(work)
+    src, sha, loldir, lsha = fetch(work)
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     buckets, skipped = {}, []
@@ -123,8 +153,20 @@ def main():
         rel = "%s/_all.yar" % plat
         report[rel] = emit(os.path.join(out, rel), rel, combined, sha, stamp, a.base_url)
 
+    # LOLDrivers: complete per-file rule sets, written verbatim under their own
+    # filenames so the elastic categories are untouched.
+    for repo_rel, out_rel in LOLDRIVERS_FILES:
+        p = os.path.join(loldir, repo_rel)
+        if not os.path.isfile(p):
+            print("!! missing LOLDrivers file: %s" % repo_rel, file=sys.stderr)
+            continue
+        body = open(p, encoding="utf-8", errors="replace").read()
+        report[out_rel] = emit_raw(os.path.join(out, out_rel), out_rel, LOLDRIVERS, body,
+                                   lsha, stamp, a.base_url,
+                                   "LOLDrivers rules are licensed under Apache-2.0.")
     lines = ["# Rule index", "",
-             "Builds rules from `%s` @ `%s`, %s." % (UPSTREAM, sha[:12], stamp), "",
+             "Builds rules from `%s` @ `%s` and `%s` @ `%s`, %s."
+             % (UPSTREAM, sha[:12], LOLDRIVERS, lsha[:12], stamp), "",
              "Pass any `sigurl` below to `yara_file` or `yara_process`. One allowlist",
              "entry in agent options covers this whole tree.", ""]
     for plat in PLATFORMS:
@@ -140,7 +182,9 @@ def main():
         fh.write("\n".join(lines))
 
     with open(os.path.join(out, "MANIFEST.txt"), "w") as fh:
-        fh.write("upstream %s\ncommit   %s\nbuilt    %s\n\n" % (UPSTREAM, sha, stamp))
+        fh.write("upstream %s\ncommit   %s\n" % (UPSTREAM, sha))
+        fh.write("loldrivers %s\ncommit   %s\n" % (LOLDRIVERS, lsha))
+        fh.write("built    %s\n\n" % stamp)
         for r in sorted(report):
             m = report[r]
             fh.write("%s\n  rules %d  files %d  bytes %d\n  sha256 %s\n"

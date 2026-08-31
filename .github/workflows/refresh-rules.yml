@@ -49,5 +49,5 @@ jobs:
             exit 0
           fi
           git add rules/
-          git commit -m "rules: refresh from upstream $(sed -n 's/^commit *//p' rules/MANIFEST.txt)"
+          git commit -m "rules: refresh from upstream $(sed -n '0,/^commit /s/^commit *//p' rules/MANIFEST.txt | head -1) + loldrivers $(sed -n '/^loldrivers/,/^commit /{/^commit /s/^commit *//p;}' rules/MANIFEST.txt | head -1)"
           git push

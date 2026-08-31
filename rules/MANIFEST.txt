@@ -1,5 +1,7 @@
 upstream https://github.com/elastic/protections-artifacts.git
 commit   9c334cf8298d9ff7e19c2a50817669072abc2d66
+loldrivers https://github.com/magicsword-io/LOLDrivers.git
+commit   2ad986b10a5f0b859b22d52b1ad4afe4c4551532
 built    2026-08-31
 
 linux/_all.yar
@@ -128,6 +130,12 @@ windows/hacktool.yar
 windows/infostealer.yar
   rules 5  files 5  bytes 5927
   sha256 2d69d06fa2b4558ecc453e1458817a7522377bea2938d1023c1240dc70ff5c0e
+windows/loldrivers_maldriver.yar
+  rules 47  files 1  bytes 119782
+  sha256 ad0c436b6251c281fd935f82793eafa598125f09c06e3087c962b3ade7d7381d
+windows/loldrivers_vulndriver.yar
+  rules 744  files 1  bytes 1568892
+  sha256 985ee7a412b37fe8a84d805ef4fd49fbf4358fc6adfeee867e109b30a5139a6d
 windows/packer.yar
   rules 1  files 1  bytes 1409
   sha256 58723f93eadef7af92944a511f2f4b15fd57f5ebb104abde0b67e1e46b8f2ea7

@@ -1,6 +1,6 @@
 # Rule index
 
-Builds rules from `https://github.com/elastic/protections-artifacts.git` @ `9c334cf8298d`, 2026-08-31.
+Builds rules from `https://github.com/elastic/protections-artifacts.git` @ `9c334cf8298d` and `https://github.com/magicsword-io/LOLDrivers.git` @ `2ad986b10a5f`, 2026-08-31.
 
 Pass any `sigurl` below to `yara_file` or `yara_process`. One allowlist
 entry in agent options covers this whole tree.
@@ -53,6 +53,8 @@ entry in agent options covers this whole tree.
 | `windows/generic.yar` | 318 | 246 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/generic.yar` |
 | `windows/hacktool.yar` | 68 | 80 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/hacktool.yar` |
 | `windows/infostealer.yar` | 5 | 5 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/infostealer.yar` |
+| `windows/loldrivers_maldriver.yar` | 47 | 116 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/loldrivers_maldriver.yar` |
+| `windows/loldrivers_vulndriver.yar` | 744 | 1532 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/loldrivers_vulndriver.yar` |
 | `windows/packer.yar` | 1 | 1 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/packer.yar` |
 | `windows/pup.yar` | 3 | 3 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/pup.yar` |
 | `windows/ransomware.yar` | 99 | 106 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/ransomware.yar` |

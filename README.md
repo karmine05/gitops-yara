@@ -3,7 +3,9 @@
 YARA rules served by URL for on-demand scanning with Fleet and osquery.
 
 This repo builds its rules from [elastic/protections-artifacts](https://github.com/elastic/protections-artifacts)
-and redistributes them unmodified under the Elastic License 2.0. Read
+and [magicsword-io/LOLDrivers](https://github.com/magicsword-io/LOLDrivers),
+redistributing them unmodified. The Elastic rules carry the Elastic License 2.0;
+the LOLDrivers rules carry Apache-2.0. Read
 [LICENSE-NOTICE.md](LICENSE-NOTICE.md) before any customer-facing use.
 
 ## How it works
@@ -29,15 +31,24 @@ rules/linux/     trojan, exploit, cryptominer, generic, hacktool, ransomware, ro
                  shellcode, backdoor, virus, worm, webshell, packer, proxy, downloader
 rules/windows/   vulndriver, trojan, generic, rootkit, hacktool, ransomware, exploit,
                  infostealer, wiper, virus, pup, backdoor, shellcode, remoteadmin,
-                 attacksimulation, clickfraud, cryptominer, packer
+                 attacksimulation, clickfraud, cryptominer, packer,
+                 loldrivers_vulndriver, loldrivers_maldriver
 rules/multi/     trojan, ransomware, hacktool, cryptominer, generic, attacksimulation, eicar
 ```
 
-Each platform also has `_all.yar`: every rule for that platform plus the
-cross-platform `Multi_*` rules. Fetch a category file when you know what you are
-hunting; fetch `_all.yar` when you do not.
+The two `windows/loldrivers_*.yar` files come from
+[magicsword-io/LOLDrivers](https://github.com/magicsword-io/LOLDrivers)
+(Apache-2.0): `loldrivers_vulndriver.yar` is 744 rules against known-vulnerable
+kernel drivers, `loldrivers_maldriver.yar` is 47 rules against malicious ones.
+They complement the Elastic `vulndriver` file, which uses a different rule set
+and does not overlap.
 
-52 files, no module imports, all compile-checked in CI.
+Each platform also has `_all.yar`: every Elastic rule for that platform plus
+the cross-platform `Multi_*` rules. The LOLDrivers files are always fetched by
+their own URL, not folded into `_all.yar`. Fetch a category file when you know
+what you are hunting; fetch `_all.yar` when you do not.
+
+54 files, no module imports, all compile-checked in CI.
 
 ## Agent options
 
