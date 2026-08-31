@@ -2,12 +2,159 @@ upstream https://github.com/elastic/protections-artifacts.git
 commit   9c334cf8298d9ff7e19c2a50817669072abc2d66
 built    2026-08-31
 
-linux-file-events.yar
-  rules 957  files 274  bytes 774290
-  sha256 d7d6ca1c8f3012e6b2c8ff5749fe3f1db63b8f49c3da17f9f52f7c1ad590c6b7
-macos-file-events.yar
-  rules 150  files 74  bytes 154472
-  sha256 3363a18f947ec46824fd6e9c7854bd58629fc08adc5c7a08525f15c30e49a711
-windows-ondemand.yar
-  rules 2024  files 744  bytes 2543861
-  sha256 c6dcd433044dcfda486c2ef2738f22b00dc63e3d032e3ecd40a63a8760d4fb52
+linux/_all.yar
+  rules 957  files 274  bytes 774386
+  sha256 c9d77aea5871faaf39e07fd1446f3476f5011cded98aeb6976b02dba8722f30e
+linux/backdoor.yar
+  rules 6  files 5  bytes 5700
+  sha256 4081b278eb85a301f3e2e008b0d46db16c9d05d06db0bd736d08bcd888a206e5
+linux/cryptominer.yar
+  rules 128  files 23  bytes 94119
+  sha256 0cd09156989107ee02d495674431c3cbcde74de9509fdfd3d4e72f2be63712b6
+linux/downloader.yar
+  rules 1  files 1  bytes 1280
+  sha256 d78a10bd01fed617e83df70ac2fe32fcffae0d0fce3df465ddd92640f3dd3465
+linux/exploit.yar
+  rules 122  files 57  bytes 96321
+  sha256 7afe9be38d61e9384e58f20f95ed4b8bbba92c0375a4f9546be5b70b4355ed95
+linux/generic.yar
+  rules 70  files 1  bytes 59581
+  sha256 908dd201b4c7e7a0895a58c79d41a22e6d72f5b2e4a2d940383b9d352b67f2e7
+linux/hacktool.yar
+  rules 58  files 15  bytes 46705
+  sha256 3d2baa895419d9831dd27b4309826d612b2530f454812096641a67bed15ca19a
+linux/packer.yar
+  rules 1  files 1  bytes 1352
+  sha256 e487b3f27f7f211f431060b734036b3f2caf04cc02e456ea36d80936c2484a35
+linux/proxy.yar
+  rules 1  files 1  bytes 1639
+  sha256 1760b9f55f2afa3234a91708527d40dc6e6d07f9c9f1ad5f317f1ed952cc7595
+linux/ransomware.yar
+  rules 28  files 24  bytes 25078
+  sha256 c242874844a8e7b6071fd509c2ddc3d486bf965b42363a825d79d01710052b48
+linux/rootkit.yar
+  rules 27  files 19  bytes 35043
+  sha256 779d06835ef84e0707f78afa779b5e958850edb497419d551f5f7f927647c958
+linux/shellcode.yar
+  rules 8  files 1  bytes 6226
+  sha256 86dea2a664c4abe55242c228236cb9108adcecaac1392fbaf827a380fd7af745
+linux/trojan.yar
+  rules 441  files 94  bytes 334593
+  sha256 b85b1677be71d43324a1a391630d436385afe9bb08cfa35c48d84aa991ef8a9a
+linux/virus.yar
+  rules 5  files 4  bytes 4168
+  sha256 6305c3c800f9dd499157accec15f1c2a7735b13d13f7a55a6d3fcefa5dfc56b2
+linux/webshell.yar
+  rules 2  files 1  bytes 1987
+  sha256 04b508dd61a4df138e205131808d5ee29ac5896c2fe948f866bbede26cf5f26a
+linux/worm.yar
+  rules 4  files 1  bytes 3380
+  sha256 a18782245ca213b4e68d269deca16cc601b247e55bf15ec658ab400d71fde329
+macos/_all.yar
+  rules 150  files 74  bytes 154568
+  sha256 ba765ee48d8337494a9d39665c4c6c557e7fe80b2f3f7352c988bbc98df45041
+macos/backdoor.yar
+  rules 7  files 5  bytes 6551
+  sha256 eab08b53ba05b2a2d4bb7bb2a1be521ca95009e6b4097efdc7165903d8102721
+macos/creddump.yar
+  rules 1  files 1  bytes 1705
+  sha256 3e643140af52b6923a41ea516f9b129991875096b3704c6466298dfffa232e78
+macos/cryptominer.yar
+  rules 4  files 2  bytes 3743
+  sha256 3e044be66bc600773a1cab7a42517b8cee914ba702fb1102a67d75becad050d5
+macos/exploit.yar
+  rules 1  files 1  bytes 1439
+  sha256 32d3e54b3f57c389f8e1bf97661e57d02d089e7b51ef3957a828d75ed731cbaa
+macos/hacktool.yar
+  rules 3  files 3  bytes 4764
+  sha256 5176f92efd229a12b7fc87a0d3ecce79dbdf064f8d3f02c1c25c28840828e026
+macos/infostealer.yar
+  rules 12  files 8  bytes 18267
+  sha256 e601329175dd24427406bd79561dd0aacefc2dfae0e0eaa9b5ccf68c054dd0c5
+macos/trojan.yar
+  rules 60  files 25  bytes 51808
+  sha256 3b73599af260f67abb6cad112832d537290a19edda9050950027115648a9a936
+macos/virus.yar
+  rules 7  files 3  bytes 5569
+  sha256 9fbe365c27a6be63415751301e6f881d9cd6522d6c9b3bacbb1a16bdf870335f
+multi/_all.yar
+  rules 55  files 26  bytes 64740
+  sha256 c9ee14b9313f9493388e56ea1a2ff4ef97326efaf2289ac07c4bcb99d2d0301d
+multi/attacksimulation.yar
+  rules 1  files 1  bytes 1183
+  sha256 696b7f68bb4fd8c88b65df2bc4d0e35677893737451f6f6b7dd19dd7778aaf2e
+multi/cryptominer.yar
+  rules 1  files 1  bytes 1494
+  sha256 2a631299200b7e0408a05632172e6c85457647a748763b9d11fc17211c517f71
+multi/eicar.yar
+  rules 1  files 1  bytes 1168
+  sha256 a1ff099e9dea41abad9f53ee7dd97597b2e97d6dca230b24202da83bdcce7657
+multi/generic.yar
+  rules 1  files 1  bytes 1310
+  sha256 26739ad64ab99c9efc911c1137aa7940cf9862cfbd4b15b0bd6803709cac86bf
+multi/hacktool.yar
+  rules 24  files 6  bytes 30981
+  sha256 b14178efdf3aa49f9e9ecb82f358774cb74434c95cbf6409161079acb3d55332
+multi/ransomware.yar
+  rules 12  files 7  bytes 12389
+  sha256 af93f415e6ea279b5559808fea4c329d54243b4af77c7806ab9a23cdd7ab1775
+multi/trojan.yar
+  rules 15  files 9  bytes 19250
+  sha256 db12f1a468d96c7a8f9c38146ae920d4bdaa34636cbe442dfa913d6309f780fe
+windows/_all.yar
+  rules 2024  files 744  bytes 2543962
+  sha256 b29a5334fddb8e325060fc60c5cacd750fccaad5feab1362f683795e68675f86
+windows/attacksimulation.yar
+  rules 1  files 1  bytes 1328
+  sha256 e9f7533ff7c037eaa380dbffaadc3f299dd3958116b5ea1c8fa9e0686f32a918
+windows/backdoor.yar
+  rules 4  files 3  bytes 5431
+  sha256 6024f102cb18db9e9deced5e7b910df3c459b3b60a56d9d874bc0fd1b485c262
+windows/clickfraud.yar
+  rules 1  files 1  bytes 1657
+  sha256 85bcb98ec652890a3e3c18cb8bf2f5a2ed8129f930036f6cf879640f927bd99a
+windows/cryptominer.yar
+  rules 2  files 1  bytes 2143
+  sha256 208ada655d091f8476367b869cfd14825ebe1efd4ce0931897d73d957e6c4ab9
+windows/exploit.yar
+  rules 11  files 9  bytes 10834
+  sha256 460ab808ef9f124e68eb3464dd746a499497b8d1021e487da89cc27068feca9f
+windows/generic.yar
+  rules 318  files 2  bytes 252821
+  sha256 8279896ef2a288d990c6a393cb8d8806ffbc1ad2fb4d5c3bebbac36977797b23
+windows/hacktool.yar
+  rules 68  files 46  bytes 82158
+  sha256 63a38b5fa44e00b5c59a41ab100a6899ef65cceb1bf807cd85130498973893ac
+windows/infostealer.yar
+  rules 5  files 5  bytes 5927
+  sha256 2d69d06fa2b4558ecc453e1458817a7522377bea2938d1023c1240dc70ff5c0e
+windows/packer.yar
+  rules 1  files 1  bytes 1409
+  sha256 58723f93eadef7af92944a511f2f4b15fd57f5ebb104abde0b67e1e46b8f2ea7
+windows/pup.yar
+  rules 3  files 3  bytes 3274
+  sha256 3400457dcc330e71e07f77f70c547ca0eba6d288bd95d52f7cc26c5c54758821
+windows/ransomware.yar
+  rules 99  files 55  bytes 108743
+  sha256 26eb2af4194eadc5806579b6616670537a21dc9df555e723987d520ace0063d2
+windows/remoteadmin.yar
+  rules 1  files 1  bytes 1472
+  sha256 d2df4d5c988061178c5325d152d640b35e742137d2848fc8f4c996508d8cbb14
+windows/rootkit.yar
+  rules 100  files 28  bytes 139595
+  sha256 01ca9eed0f7db7c158d9383d67061ff4de45e187aea6cbd283bd47735879e79f
+windows/shellcode.yar
+  rules 6  files 2  bytes 5148
+  sha256 a24c2cfb24899c4e7fb30c125a22b57ffab6e2b1a64041e16c938d51e8112ddd
+windows/trojan.yar
+  rules 509  files 212  bytes 539360
+  sha256 c82f2106440a6b9d317bb5046f3f3e9045870fc7f25672661b109ad858844253
+windows/virus.yar
+  rules 3  files 3  bytes 3244
+  sha256 d5914f7c486244161f2622a5a15987109b9c35c4d3393ffbf3cb47bd28c6ae5a
+windows/vulndriver.yar
+  rules 833  files 341  bytes 1319090
+  sha256 4fbbcdbf85ed343d66a1874a5d6f4044a4476543d18935988bda1852bac53157
+windows/wiper.yar
+  rules 4  files 4  bytes 4719
+  sha256 a73bf5fcb490b8984def78ba2c1ca041827e16ea01be5cf9b1079060e7f7d734

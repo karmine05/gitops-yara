@@ -1,23 +1,25 @@
-# Fleet agent options - v3
-# Updated 2026-08-31. Supersedes v2.
+# Fleet agent options - v4
+# Updated 2026-08-31. Supersedes v3.
 #
-# v3 changes:
-#   1. Win_Yara_File_Path renamed to windows_file_events. The old name claimed
-#      YARA; the category actually drives ntfs_journal_events. yara_events is
-#      not supported on Windows at all.
-#   2. YARA rules now come from github.com/karmine05/gitops-yara.
-#      - yara_events (macOS, Linux) reads LOCAL files placed by deploy/install-*.sh.
-#        signature_urls cannot feed yara_events - it only backs the on-demand
-#        yara_file table via its sigurl constraint.
-#      - yara_file (all platforms, incl. Windows) uses signature_urls as an
-#        allowlist of URLs an analyst may pass as sigurl.
-#   3. Dead signature_urls removed:
-#      - chronicle/GCTI CobaltStrike path returns 404.
-#      - Yara-Rules/rules index.yar returns a 2022 list of `include` directives
-#        that osquery cannot resolve over HTTP.
-#   4. yara_sigurl_authenticate stays FALSE - see the note at the bottom.
+# YARA IS ON-DEMAND ONLY IN THIS VERSION.
+#   The yara_events tier is gone: no `yara.signatures`, no `yara.file_paths`,
+#   no rule files deployed to hosts. YARA now runs only when an analyst queries
+#   the yara_file or yara_process table with a sigurl.
 #
-# Linux eventing stays on BPF. The audit family remains off by decision.
+#   Trade-off, stated plainly: nothing scans automatically any more. A malicious
+#   file landing in Downloads produces a file_events row but no YARA verdict
+#   until someone runs a query. FIM still records every change - see file_paths.
+#
+# How the allowlist works (osquery isRuleUrlAllowed, tables/yara/yara.cpp):
+#   scheme and host must match EXACTLY (case-sensitive string compare), and the
+#   URL PATH is compiled as a std::regex and full-matched. So one entry covers a
+#   whole directory tree. Verified: it correctly rejects other repos, plain
+#   http, and paths with anything appended after .yar.
+#
+# Kept from v3:
+#   - Win_Yara_File_Path renamed to windows_file_events (drives ntfs_journal_events)
+#   - Windows paths single-quoted so YAML keeps the backslashes literal
+#   - Linux eventing on BPF; audit family off by decision
 
 config:
   options:
@@ -38,20 +40,14 @@ overrides:
 
     darwin:
       yara:
-        # LOCAL file - this is what yara_events compiles. Placed by
-        # deploy/install-macos.sh, which also restarts fleetd so it recompiles.
-        signatures:
-          macos_malware:
-            - /opt/fleetdm/yara/malware_rules.yar
-        file_paths:
-          Mac_Yara_File_Path:
-            - macos_malware
-        # Allowlist for on-demand scans:
-        #   SELECT * FROM yara_file WHERE path='...' AND sigurl='<one of these>';
+        # On-demand allowlist only. No `signatures` and no `file_paths` here,
+        # so yara_events does not run.
+        #
+        # First entry: every .yar anywhere under this repo's rules/ tree.
+        # Add a file to the repo and it is usable immediately - no config change.
         signature_urls:
-          - https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos-file-events.yar
-          - https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/linux-file-events.yar
-          - https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows-ondemand.yar
+          - 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/.*\.yar'
+          - 'https://raw.githubusercontent.com/Neo23x0/signature-base/master/yara/.*\.yar'
       options:
         pack_delimiter: /
         logger_tls_period: 60
@@ -65,9 +61,8 @@ overrides:
           - SELECT uuid AS host_uuid FROM system_info;
           - SELECT hostname AS hostname FROM system_info;
       file_paths:
-        # Name kept deliberately. Unlike the Windows one this IS accurate -
-        # the category drives both file_events and yara_events on macOS - and
-        # it populates the `category` column, so renaming breaks saved queries.
+        # Drives file_events (FIM). Unrelated to YARA now that yara_events is
+        # off, but still the record of what changed and where to point a scan.
         Mac_Yara_File_Path:
           - /Users/%%/Desktop/%%
           - /Users/%%/Downloads/%%
@@ -142,16 +137,9 @@ overrides:
 
     ubuntu:
       yara:
-        signatures:
-          linux_malware:
-            - /etc/fleetdm/yara/malware_rules.yar
-        file_paths:
-          ubuntu_file_events:
-            - linux_malware
         signature_urls:
-          - https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/linux-file-events.yar
-          - https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos-file-events.yar
-          - https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows-ondemand.yar
+          - 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/.*\.yar'
+          - 'https://raw.githubusercontent.com/Neo23x0/signature-base/master/yara/.*\.yar'
       options:
         pack_delimiter: /
         logger_tls_period: 60
@@ -173,13 +161,9 @@ overrides:
 
     windows:
       yara:
-        # No `signatures` and no `file_paths` block here on purpose:
-        # yara_events does not exist on Windows. This allowlist only enables
-        # analyst-run scans through the yara_file table.
         signature_urls:
-          - https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows-ondemand.yar
-          - https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos-file-events.yar
-          - https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/linux-file-events.yar
+          - 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/.*\.yar'
+          - 'https://raw.githubusercontent.com/Neo23x0/signature-base/master/yara/.*\.yar'
       options:
         pack_delimiter: /
         logger_tls_period: 60
@@ -193,12 +177,9 @@ overrides:
           - SELECT uuid AS host_uuid FROM system_info;
           - SELECT hostname AS hostname FROM system_info;
       file_paths:
-        # RENAMED in v3 from Win_Yara_File_Path. This category drives
-        # ntfs_journal_events, not YARA. Breaking change: the `category` column
-        # value changes, so update any saved query or detection filtering on
-        # 'Win_Yara_File_Path' at the same time you apply this.
-        #
-        # Single-quoted so YAML keeps the backslashes literal.
+        # RENAMED from Win_Yara_File_Path. Drives ntfs_journal_events, not YARA.
+        # Breaking change: the `category` column value changes - update any saved
+        # query filtering on 'Win_Yara_File_Path' when you apply this.
         windows_file_events:
           - 'C:\Users\%%\Desktop\%%'
           - 'C:\Users\%%\Downloads\%%'
@@ -270,7 +251,9 @@ command_line_flags:
   enable_bpf_events: true          # bpf_process_events, bpf_socket_events
 
   # --- macOS + Linux ---
-  enable_file_events: true         # file_events, and the trigger for yara_events
+  # Still needed: this drives file_events (FIM). It no longer triggers YARA,
+  # because yara_events is off in this version.
+  enable_file_events: true
 
   # --- macOS ---
   disable_endpointsecurity: false      # es_process_events (needs Full Disk Access per host)
@@ -286,13 +269,13 @@ command_line_flags:
   windows_event_channels: Security,Application,System
 
   # --- YARA ---
-  # MUST stay false. This flag does NOT control TLS. Setting it true makes
-  # osquery send a POST with the node key in a JSON body instead of a GET,
-  # for a server that authenticates rule requests. raw.githubusercontent.com
-  # would reject that and every sigurl fetch would fail.
-  # osquery always validates the HTTPS server certificate regardless.
+  # MUST stay false. This does NOT control TLS. True makes osquery send a POST
+  # with the node key instead of a GET, for a server that authenticates rule
+  # requests. raw.githubusercontent.com would reject that and every fetch fails.
+  # osquery always validates the HTTPS certificate regardless.
   yara_sigurl_authenticate: false
 
-  # Throttle between file scans. Default 50ms. Raise it if yara_events costs
-  # too much CPU during bulk file activity; lower it if scans lag behind.
+  # Sleep between file scans, in ms. Matters more now that scanning is on demand:
+  # a directory sweep pays this per file, so 1000 files costs ~50s of pure delay.
+  # Lower it for faster sweeps at the cost of bigger memory spikes.
   yara_delay: 50

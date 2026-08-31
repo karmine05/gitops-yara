@@ -1,4 +1,4 @@
-name: Refresh YARA bundles
+name: Refresh YARA rules
 
 on:
   schedule:
@@ -21,15 +21,15 @@ jobs:
       - name: Install yara-python
         run: pip install yara-python
 
-      - name: Rebuild bundles
-        run: python3 tools/build_bundles.py --out rules --verify
+      - name: Rebuild rules
+        run: python3 tools/build_rules.py --out rules --verify
 
-      - name: Fail if any bundle does not compile
+      - name: Fail if any rule file does not compile
         run: |
           python3 - <<'PY'
           import glob, sys, yara
           bad = []
-          for f in sorted(glob.glob('rules/*.yar')):
+          for f in sorted(glob.glob('rules/**/*.yar', recursive=True)):
               try:
                   n = sum(1 for _ in yara.compile(filepath=f))
                   print(f"{f}: {n} rules")
