@@ -127,3 +127,19 @@ over `_all.yar` to cut fetch size and transfer, not match time.
 | 50 KB text | 0.3 ms |
 | 1 MB binary | ~7 ms |
 | 10 MB binary | ~70 ms |
+
+## Known time bomb: BPF on Linux
+
+osquery removed all BPF support in commit `484e1d05` ("Upgrade Linux toolchain
+to 1.3.0", [#8814](https://github.com/osquery/osquery/pull/8814), 2026-04-30).
+Release **5.23.1 is the last one that has it** — the removal is on main and not
+yet in a tagged release. Tracking: [fleetdm/fleet#30639](https://github.com/fleetdm/fleet/issues/30639).
+
+Agent options set `enable_bpf_events: true`. On an osqueryd built after that
+commit the flag is unknown and `bpf_process_events` / `bpf_socket_events` do not
+exist. Since the audit family is deliberately off, Linux would then have **no
+process or socket eventing at all**, and nothing would raise an error.
+
+Section 4 of [`fleet/test-pack.sql`](fleet/test-pack.sql) is the canary. Run it
+on every Linux host after any agent upgrade. If it trips, either switch the
+Linux hosts to the audit family in their own team, or pin the agent version.
