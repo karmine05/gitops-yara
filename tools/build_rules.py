@@ -124,7 +124,7 @@ def main():
         report[rel] = emit(os.path.join(out, rel), rel, combined, sha, stamp, a.base_url)
 
     lines = ["# Rule index", "",
-             "Generated from `%s` @ `%s` on %s." % (UPSTREAM, sha[:12], stamp), "",
+             "Builds rules from `%s` @ `%s`, %s." % (UPSTREAM, sha[:12], stamp), "",
              "Pass any `sigurl` below to `yara_file` or `yara_process`. One allowlist",
              "entry in agent options covers this whole tree.", ""]
     for plat in PLATFORMS:

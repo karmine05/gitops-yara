@@ -1,9 +1,7 @@
--- Verification queries for agent options v4 (on-demand YARA).
+-- Verification queries for agent options v5 (on-demand YARA).
 -- Run as live queries in Fleet. Table is yara_file (alias: yara).
 
--- ============================================================
--- 1. Flags landed  (needs a fleetd restart after applying v4)
--- ============================================================
+-- 1. Flags landed  (needs a fleetd restart after applying v5)
 SELECT name, value, default_value
 FROM osquery_flags
 WHERE name IN (
@@ -16,13 +14,10 @@ WHERE name IN (
 -- yara_sigurl_authenticate MUST be false. True switches the fetch to a POST
 -- with the node key and GitHub rejects it.
 
--- ============================================================
 -- 2. SMOKE TEST - proves the allowlist and the fetch both work
--- ------------------------------------------------------------
 -- On a test host:
 --   printf '%s' 'X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*' > /tmp/eicar.com
 -- (on Windows write it to C:\Users\<you>\Downloads\eicar.com and adjust path)
--- ============================================================
 SELECT path, count, matches
 FROM yara_file
 WHERE path = '/tmp/eicar.com'
@@ -33,9 +28,7 @@ WHERE path = '/tmp/eicar.com'
 -- "signature url not allowed" -> the allowlist regex did not match your URL.
 -- empty result / fetch error  -> host cannot reach raw.githubusercontent.com.
 
--- ============================================================
 -- 3. Targeted hunt - one category, small fetch
--- ============================================================
 SELECT path, count, matches FROM yara_file
 WHERE path = '/tmp/suspect.bin' AND sigurl = 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/linux/ransomware.yar';
 
@@ -45,65 +38,50 @@ WHERE path = '/tmp/suspect.bin' AND sigurl = 'https://raw.githubusercontent.com/
 SELECT path, count, matches FROM yara_file
 WHERE path = '/tmp/suspect.bin' AND sigurl = 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/vulndriver.yar';
 
--- ============================================================
 -- 4. Directory sweep
--- ------------------------------------------------------------
 -- yara_delay (50 ms default) is paid PER FILE. A 1,000-file sweep spends ~50s
 -- in delay alone. Narrow the path, or lower yara_delay for sweeps.
--- ============================================================
 SELECT path, count, matches
 FROM yara_file
 WHERE path LIKE '/Users/%/Downloads/%%'
   AND sigurl = 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos/_all.yar'
   AND count > 0;
 
--- ============================================================
 -- 5. Scan only what changed - FIM feeds the hunt
--- ------------------------------------------------------------
 -- This is the pattern that replaces yara_events: file_events records the
 -- change, you scan the specific paths it names.
--- ============================================================
 SELECT datetime(time,'unixepoch') AS t, target_path, category, action
 FROM file_events
 WHERE action IN ('CREATED','UPDATED')
 ORDER BY time DESC LIMIT 50;
 -- Then feed a target_path into query 3.
 
--- ============================================================
 -- 6. Process memory
--- ============================================================
 SELECT pid, count, matches FROM yara_process
 WHERE pid = 1234 AND sigurl = 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/linux/_all.yar';
 
--- ============================================================
 -- 7. Windows - RENAMED CATEGORY
--- ------------------------------------------------------------
 -- v3 renamed this to windows_file_events; v5 reverted it. Expect the original
 -- Win_Yara_File_Path. See CORRECTIONS.md.
--- ============================================================
 SELECT category, count(*) AS n FROM ntfs_journal_events GROUP BY category;
 -- Expect Win_Yara_File_Path, n>0 after a file changes under the monitored dirs.
 
--- ============================================================
--- 8. Windows browser ATC tables  (returned 0 rows before v2 fixed escaping)
--- ============================================================
+-- 8. Windows browser ATC tables
+-- CORRECTIONS.md section 1: these tables did return rows all along; the
+-- "zero rows, bad escaping" claim was wrong.
 SELECT
   (SELECT count(*) FROM chrome_url_history)      AS chrome_history,
   (SELECT count(*) FROM edge_url_history)        AS edge_history,
   (SELECT count(*) FROM chrome_download_history) AS chrome_downloads,
   (SELECT count(*) FROM firefox_url_history)     AS firefox_history;
 
--- ============================================================
 -- 9. PowerShell de-duplication  (Windows)
--- ============================================================
 SELECT
   (SELECT count(*) FROM windows_events WHERE eventid = 4104) AS in_windows_events,
   (SELECT count(*) FROM powershell_events)                   AS in_powershell_events;
 -- in_windows_events should be 0 - the channel was dropped from the list.
 
--- ============================================================
 -- 10. Publishers still healthy
--- ============================================================
 SELECT name, publisher, type, subscriptions, events, active
 FROM osquery_events ORDER BY events DESC;
--- yara_events should now be absent or inactive. That is expected in v4.
+-- yara_events should now be absent or inactive. That is expected in v5.

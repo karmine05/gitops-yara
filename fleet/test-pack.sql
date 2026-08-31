@@ -1,55 +1,23 @@
--- ============================================================================
 -- Fleet test pack: evented tables, ATC, YARA
--- Built against agent options v4. Column names verified against osquery specs.
+-- Built against agent options v5.
 --
--- Fleet live query runs ONE statement at a time. Each block below is a single
--- copy-pasteable query. Run the consolidated one first, then drill down.
+-- Fleet live queries run ONE statement at a time. Each block below is a
+-- single copy-pasteable query.
 --
--- Apply v4 and RESTART fleetd before testing. command_line_flags do not take
--- effect without a restart.
--- ============================================================================
+-- Apply v5 and RESTART fleetd before testing. command_line_flags do not
+-- take effect without a restart.
 --
--- ############################################################################
--- WHY EVERY EVENTED QUERY BELOW HAS "WHERE time > 0"
--- ----------------------------------------------------------------------------
--- osquery's EventSubscriberPlugin::genTable does this:
+-- WHY EVENTED QUERIES CARRY "WHERE time > 0"
+-- In osqueryd, an evented-table query with no time constraint returns only
+-- events since that query last ran; the cursor lives in RocksDB, survives
+-- restarts, and expireEventBatches() purges the rows it read. count(*)
+-- therefore returns a real number once and 0 on every rerun, which looks
+-- like a dead publisher. Any time constraint disables that optimisation and
+-- returns the whole buffer. Leave the constraint off in real scheduled
+-- detection queries, where since-last-run is the behaviour you want. Full
+-- explanation: README.md, "Verification gotcha: evented tables".
 --
---     bool can_optimize{true};
---     if (context.constraints["time"].getAll().size() > 0) {
---       can_optimize = false;
---     }
---
--- and generateRows then does:
---
---     if (can_optimize && shouldOptimize()) {   // shouldOptimize = isDaemon() && events_optimize
---       // "only emit events since the last query"
---       start_time = optimize_time - 1;
---     }
---
--- So in osqueryd - which is what runs Fleet live AND scheduled queries - an
--- evented-table query with NO time constraint returns ONLY events since the
--- last time that query ran. The cursor lives in RocksDB and SURVIVES RESTARTS.
--- Worse, after all registered queries have run, expireEventBatches() purges
--- what was read.
---
--- Practical effect: "SELECT count(*) FROM es_process_events" returns a real
--- number the first time and 0 on every rerun. It looks exactly like a broken
--- publisher. Adding any time constraint sets can_optimize=false and returns
--- the whole buffer.
---
--- Use "WHERE time > 0" for verification. Leave it OFF for real scheduled
--- detection queries, where the since-last-run behaviour is what you want.
---
--- Cross-check: osqueryi is not the daemon, so isDaemon() is false and it never
--- optimizes. If `sudo orbit shell` shows events and Fleet shows none, this is
--- why - not a broken publisher.
--- ############################################################################
-
-
-
--- ############################################################################
 -- 0. UNIVERSAL - run these first, on every platform
--- ############################################################################
 
 -- 0.1  Which publishers are alive and producing?
 SELECT name, publisher, type, subscriptions, events, refreshes, active
@@ -75,7 +43,7 @@ WHERE registry = 'table' AND name IN (
 ) ORDER BY name;
 
 
--- 0.3  Did the v4 flags land?
+-- 0.3  Did the v5 flags land?
 SELECT name, value, default_value FROM osquery_flags
 WHERE name IN (
   'disable_events','events_expiry','events_max','enable_file_events',
@@ -111,7 +79,7 @@ SELECT 'es_process_events'      AS tbl, count(*) AS n FROM es_process_events WHE
 UNION ALL SELECT 'es_process_file_events', count(*) FROM es_process_file_events WHERE time > 0
 UNION ALL SELECT 'file_events',            count(*) FROM file_events WHERE time > 0
 UNION ALL SELECT 'yara_events',            count(*) FROM yara_events WHERE time > 0;
--- yara_events = 0 is CORRECT in v4: continuous YARA is off by design.
+-- yara_events = 0 is CORRECT in v5: continuous YARA is off by design.
 -- es_* = 0 usually means Full Disk Access is not granted to the fleetd
 -- osqueryd binary. The flag alone does not enable capture.
 
@@ -181,7 +149,7 @@ ORDER BY n DESC LIMIT 25;
 SELECT
   (SELECT count(*) FROM windows_events WHERE time > 0 AND eventid = 4104) AS in_windows_events,
   (SELECT count(*) FROM powershell_events WHERE time > 0)    AS in_powershell_events;
--- in_windows_events must be 0 in v4. in_powershell_events stays 0 unless
+-- in_windows_events must be 0 in v5. in_powershell_events stays 0 unless
 -- Script Block Logging is enabled by GPO - that is a host setting, not a flag.
 
 -- 1.13 PowerShell script blocks
@@ -253,7 +221,7 @@ ORDER BY f.time DESC LIMIT 20;
 
 
 -- ############################################################################
--- 3. YARA (on-demand only in v4)
+-- 3. YARA (on-demand only in v5)
 -- ############################################################################
 -- Table is yara_file (alias: yara). signature_urls is an allowlist; osquery
 -- matches host+scheme exactly and treats the URL PATH as a regex.

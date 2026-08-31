@@ -10,8 +10,8 @@ commits and in the query comments.
 backslashes per separator, so osquery never matched the paths, and
 `ntfs_journal_events` plus all four Windows ATC tables were returning zero rows.
 
-**Actually:** the YAML/JSON analysis was right — osquery does receive
-`c:\\Users\\%%\\Desktop\\%%` — but osquery normalises it. In
+**Actually:** the YAML/JSON analysis was right: osquery does receive
+`c:\\Users\\%%\\Desktop\\%%`, but it normalises the value. In
 `osquery/filesystem/filesystem.cpp`, `replaceGlobWildcards()` runs the
 pre-wildcard base through `fs::canonical()`:
 
@@ -30,17 +30,17 @@ paths failed to resolve emits nothing at all. Five rows means those paths
 resolved and matched.
 
 **What this cost:** the v2 path rewrite was unnecessary. Worse, the v3 rename
-of `Win_Yara_File_Path` to `windows_file_events` was a breaking change — it
-changes the `category` column — justified partly by a bug that was not real.
+of `Win_Yara_File_Path` to `windows_file_events` broke saved queries: it
+changes the `category` column, and the justification was a bug that was not real.
 Anything keyed on the old category name stopped matching for no gain.
 
-**Verification error behind it:** the YAML-to-JSON encoding was tested and the
-double backslashes confirmed. Whether osquery *rejects* them was never tested.
-Encoding was proven; behaviour was assumed.
+**Verification error behind it:** we tested the YAML-to-JSON encoding and
+confirmed the double backslashes. We never tested whether osquery *rejects*
+them. The evidence proved the encoding; the behaviour was an assumption.
 
 ## 2. `yara_sigurl_authenticate` is not TLS verification
 
-**Claimed:** it should be set `true` to validate the certificate when fetching
+**Claimed:** set it `true` to verify the certificate when fetching
 rules over HTTPS.
 
 **Actually:** it switches the fetch from GET to POST with the node key in a JSON
@@ -55,7 +55,7 @@ high-volume; add `es_fim_mute_path_prefix`.
 
 **Actually:** `EndpointSecurityFileEventPublisher::setUp()` calls
 `es_invert_muting(ES_MUTE_INVERSION_TYPE_TARGET_PATH)` and then *selects* only
-the paths from the `file_paths` config. It is already scoped to those
+the paths from the `file_paths` config. The publisher is already scoped to those
 directories. Adding mute prefixes would have narrowed an already narrow feed.
 
 ## 4. Verification queries produced false negatives

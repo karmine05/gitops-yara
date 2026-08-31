@@ -2,14 +2,14 @@
 
 YARA rules served by URL for on-demand scanning with Fleet and osquery.
 
-Rules are generated from [elastic/protections-artifacts](https://github.com/elastic/protections-artifacts)
-and redistributed unmodified under the Elastic License 2.0. Read
+This repo builds its rules from [elastic/protections-artifacts](https://github.com/elastic/protections-artifacts)
+and redistributes them unmodified under the Elastic License 2.0. Read
 [LICENSE-NOTICE.md](LICENSE-NOTICE.md) before any customer-facing use.
 
 ## How it works
 
 Point `sigurl` at any file in `rules/` from the `yara_file` or `yara_process`
-table. Nothing is deployed to hosts.
+table. Nothing lands on hosts.
 
 ```sql
 SELECT path, count, matches
@@ -33,7 +33,7 @@ rules/windows/   vulndriver, trojan, generic, rootkit, hacktool, ransomware, exp
 rules/multi/     trojan, ransomware, hacktool, cryptominer, generic, attacksimulation, eicar
 ```
 
-Each platform also has `_all.yar` — every rule for that platform plus the
+Each platform also has `_all.yar`: every rule for that platform plus the
 cross-platform `Multi_*` rules. Fetch a category file when you know what you are
 hunting; fetch `_all.yar` when you do not.
 
@@ -70,8 +70,8 @@ cd fleet
 **This repo must be public.** osquery has no client authentication for signature
 URLs. A private repo returns 404 to the agent.
 
-**`yara_sigurl_authenticate` must stay `false`.** It is not TLS verification —
-it switches the fetch from GET to POST with the node key in a JSON body, for a
+**`yara_sigurl_authenticate` must stay `false`.** It does not control TLS
+verification; it switches the fetch from GET to POST with the node key in a JSON body, for a
 server that authenticates rule requests. GitHub rejects that. osquery validates
 the HTTPS certificate either way.
 
@@ -80,10 +80,10 @@ in Downloads produces a `file_events` row but no YARA verdict until someone runs
 a query. The intended pattern is in `fleet/verify.sql` query 5: let FIM tell you
 what changed, then scan those paths.
 
-**`yara_delay` is paid per file.** At the 50 ms default, a 1,000-file directory
+**`yara_delay` costs you per file.** At the 50 ms default, a 1,000-file directory
 sweep spends ~50 seconds in delay alone. Narrow the path or lower the flag.
 
-**Fetched rules are cached** per the server's `Last-Modified` header, so a push
+**osquery caches fetched rules** per the server's `Last-Modified` header, so a push
 to this repo is not instantly live on every host.
 
 ## Smoke test
@@ -111,10 +111,10 @@ pip install yara-python
 python3 tools/build_rules.py --out rules --verify
 ```
 
-Deterministic — the same upstream commit produces byte-identical output.
+Deterministic: the same upstream commit produces byte-identical output.
 `.github/workflows/refresh-rules.yml` runs it every Monday 06:00 UTC, fails if
-any file stops compiling, and commits only on change. Because rules are fetched
-by URL, a merged refresh reaches hosts on its own once their cache expires.
+any file stops compiling, and commits only on change. The fetch is by URL,
+so a merged refresh reaches hosts on its own once their cache expires.
 
 ## Scan cost
 
@@ -130,12 +130,12 @@ over `_all.yar` to cut fetch size and transfer, not match time.
 
 ## Verification gotcha: evented tables
 
-In osqueryd — which runs Fleet's live *and* scheduled queries — an evented-table
+In osqueryd (which runs Fleet's live *and* scheduled queries) an evented-table
 query with **no `time` constraint** returns only events since that query last
-ran. The cursor lives in RocksDB and survives agent restarts, and
-`expireEventBatches()` then purges what was read. So `SELECT count(*) FROM
-es_process_events` gives a real number once and `0` on every rerun, which looks
-exactly like a dead publisher.
+ran. The cursor lives in RocksDB, survives agent restarts, and
+`expireEventBatches()` purges the rows it read. `SELECT count(*) FROM
+es_process_events` then gives a real number once and `0` on every rerun,
+which looks exactly like a dead publisher.
 
 Every query in `fleet/health-check.sql` and `fleet/test-pack.sql` carries
 `WHERE time > 0` for this reason. Leave it off for real scheduled detection
@@ -148,7 +148,7 @@ events and Fleet shows none, that is this, not a broken publisher.
 
 osquery removed all BPF support in commit `484e1d05` ("Upgrade Linux toolchain
 to 1.3.0", [#8814](https://github.com/osquery/osquery/pull/8814), 2026-04-30).
-Release **5.23.1 is the last one that has it** — the removal is on main and not
+Release **5.23.1 is the last one that has it**; the removal is on main and not
 yet in a tagged release. Tracking: [fleetdm/fleet#30639](https://github.com/fleetdm/fleet/issues/30639).
 
 Agent options set `enable_bpf_events: true`. On an osqueryd built after that

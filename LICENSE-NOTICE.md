@@ -1,10 +1,10 @@
 # License notice
 
-The rule bundles under `rules/` are generated from
-[elastic/protections-artifacts](https://github.com/elastic/protections-artifacts)
-and are redistributed unmodified.
+The rule bundles under `rules/` come from
+[elastic/protections-artifacts](https://github.com/elastic/protections-artifacts),
+redistributed unmodified.
 
-Those rules are licensed under the **Elastic License 2.0 (ELv2)**.
+Those rules carry the **Elastic License 2.0 (ELv2)** license.
 Read the terms at https://www.elastic.co/licensing/elastic-license
 
 ## What ELv2 permits
@@ -20,7 +20,7 @@ three limitations. The two that matter here:
 
 Internal detection use across our own fleet is squarely permitted.
 
-**Open question for legal before this is used in a customer-facing context.**
+**Open question for legal before any customer-facing use.**
 Fleet is a device management vendor. Shipping these rules to customers as part
 of a managed offering is the exact shape ELv2 limitation 1 restricts. Internal
 use is not in question; redistribution to customers is. Raise it before any

@@ -75,9 +75,9 @@ json.dump(yaml.safe_load(open('$YAML')), open('/tmp/ao-new.json','w'), indent=2,
 " 
 jq -S . "$BACKUP" > /tmp/ao-old.json
 
-echo "==> diff (current -> v3)"
+echo "==> diff (current -> v5)"
 if diff -u /tmp/ao-old.json /tmp/ao-new.json > /tmp/ao.diff; then
-  echo "    no change - already at v3"; rm -f "$BACKUP"; exit 0
+  echo "    no change - already at v5"; rm -f "$BACKUP"; exit 0
 fi
 sed -n '1,200p' /tmp/ao.diff
 LINES=$(wc -l < /tmp/ao.diff)
@@ -101,7 +101,7 @@ api PATCH "$PATCH_PATH" /tmp/ao-patch.json | jq -r '"    ok"'
 echo "==> verifying"
 api GET "$GET_PATH" | jq '.team.agent_options // .agent_options' | jq -S . > /tmp/ao-after.json
 if diff -q /tmp/ao-new.json /tmp/ao-after.json >/dev/null; then
-  echo "    server state matches v3"
+  echo "    server state matches v5"
 else
   echo "    WARNING: server state differs from what was sent:" >&2
   diff -u /tmp/ao-new.json /tmp/ao-after.json | head -40 >&2

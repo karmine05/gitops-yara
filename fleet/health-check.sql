@@ -1,16 +1,12 @@
--- ============================================================================
--- Post-deployment health check for agent options v4.
+-- Post-deployment health check for agent options v5.
 -- One query per platform. Each returns check/value/expected rows - run it,
 -- paste the whole result. Run Q1 everywhere, then the query for the platform.
 --
--- Deliberately avoids referencing bpf_* tables directly: on a post-5.23.1
--- agent those tables do not exist and a direct reference would fail the whole
--- query. Existence is checked through osquery_registry instead.
--- ============================================================================
+-- The bpf_* tables are not referenced directly: on a post-5.23.1 agent those
+-- tables do not exist and a direct reference would fail the whole query.
+-- Q3 checks their existence through osquery_registry instead.
 --
--- ############################################################################
--- WHY EVERY EVENTED QUERY BELOW HAS "WHERE time > 0"
--- ----------------------------------------------------------------------------
+-- WHY EVERY EVENTED QUERY HAS "WHERE time > 0"
 -- osquery's EventSubscriberPlugin::genTable does this:
 --
 --     bool can_optimize{true};
@@ -25,9 +21,9 @@
 --       start_time = optimize_time - 1;
 --     }
 --
--- So in osqueryd - which is what runs Fleet live AND scheduled queries - an
--- evented-table query with NO time constraint returns ONLY events since the
--- last time that query ran. The cursor lives in RocksDB and SURVIVES RESTARTS.
+-- In osqueryd, which runs Fleet live AND scheduled queries, an evented-table
+-- query with no time constraint therefore returns only events since the last
+-- run of that query. The cursor lives in RocksDB and survives restarts.
 -- Worse, after all registered queries have run, expireEventBatches() purges
 -- what was read.
 --
@@ -36,15 +32,13 @@
 -- publisher. Adding any time constraint sets can_optimize=false and returns
 -- the whole buffer.
 --
--- Use "WHERE time > 0" for verification. Leave it OFF for real scheduled
+-- Use "WHERE time > 0" for verification. Leave it off for real scheduled
 -- detection queries, where the since-last-run behaviour is what you want.
 --
 -- Cross-check: osqueryi is not the daemon, so isDaemon() is false and it never
 -- optimizes. If `sudo orbit shell` shows events and Fleet shows none, this is
 -- why - not a broken publisher.
--- ############################################################################
-
-
+--
 -- ####################### Q1 - ALL PLATFORMS ################################
 SELECT 'agent_version' AS check_name,
        (SELECT version FROM osquery_info) AS value,
@@ -76,7 +70,7 @@ UNION ALL SELECT 'es_process_file_events', CAST(count(*) AS TEXT), '>0 (else no 
 UNION ALL SELECT 'file_events (all)',      CAST(count(*) AS TEXT), '>0' FROM file_events WHERE time > 0
 UNION ALL SELECT 'file_events Mac_Yara_File_Path', CAST(count(*) AS TEXT), '>0 after you touch a file'
        FROM file_events WHERE time > 0 AND category='Mac_Yara_File_Path'
-UNION ALL SELECT 'yara_events',            CAST(count(*) AS TEXT), '0 - correct, v4 is on-demand only' FROM yara_events WHERE time > 0;
+UNION ALL SELECT 'yara_events',            CAST(count(*) AS TEXT), '0 - correct, v5 is on-demand only' FROM yara_events WHERE time > 0;
 
 -- ####################### Q3 - Linux ########################################
 -- First: touch /tmp/fim-test.txt
@@ -125,5 +119,5 @@ UNION ALL SELECT 'firefox_url_history',     CAST(count(*) AS TEXT) FROM firefox_
 SELECT path, count, matches FROM yara_file
 WHERE path = '/tmp/eicar.com' AND sigurl = 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/multi/eicar.yar';
 -- count=1, matches=Multi_EICAR_ac8f42d6  -> the whole chain works
--- "signature url not allowed"            -> v4 allowlist did not apply
+-- "signature url not allowed"            -> v5 allowlist did not apply
 -- empty / fetch warning in osqueryd log   -> host cannot reach GitHub

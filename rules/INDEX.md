@@ -1,6 +1,6 @@
 # Rule index
 
-Generated from `https://github.com/elastic/protections-artifacts.git` @ `9c334cf8298d` on 2026-08-31.
+Builds rules from `https://github.com/elastic/protections-artifacts.git` @ `9c334cf8298d`, 2026-08-31.
 
 Pass any `sigurl` below to `yara_file` or `yara_process`. One allowlist
 entry in agent options covers this whole tree.
