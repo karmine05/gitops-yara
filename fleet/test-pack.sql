@@ -163,7 +163,8 @@ UNION ALL SELECT 'dns_lookup_events',  count(*) FROM dns_lookup_events WHERE tim
 SELECT category, action, count(*) AS n
 FROM ntfs_journal_events WHERE time > 0 GROUP BY category, action ORDER BY n DESC;
 -- Expect category = windows_file_events (renamed from Win_Yara_File_Path in v3).
--- Zero rows here also means the v2 backslash fix has not taken effect.
+-- NOTE: the v2 'backslash fix' addressed a bug that did not exist -
+-- fs::canonical() already normalised the doubled separators. See CORRECTIONS.md.
 
 -- 1.10 NTFS journal detail
 SELECT datetime(time,'unixepoch') AS t, action, category, path, old_path, drive_letter
@@ -212,7 +213,8 @@ UNION ALL SELECT 'chrome_url_history',      count(*) FROM chrome_url_history
 UNION ALL SELECT 'chrome_download_history', count(*) FROM chrome_download_history
 UNION ALL SELECT 'firefox_url_history',     count(*) FROM firefox_url_history;
 
--- 2.2  Consolidated Windows ATC - all four returned 0 before the v2 fix
+-- 2.2  Consolidated Windows ATC (the claim that these returned 0 before v2
+--      was wrong - see CORRECTIONS.md)
 SELECT 'chrome_url_history'      AS tbl, count(*) AS n FROM chrome_url_history
 UNION ALL SELECT 'edge_url_history',        count(*) FROM edge_url_history
 UNION ALL SELECT 'chrome_download_history', count(*) FROM chrome_download_history

@@ -94,9 +94,9 @@ UNION ALL SELECT 'BPF CANARY: bpf table present',
 -- ####################### Q4 - Windows ######################################
 -- First: echo test > %USERPROFILE%\Downloads\fim-test.txt  &&  nslookup example.com
 SELECT 'ntfs_journal_events' AS tbl, CAST(count(*) AS TEXT) AS n, '>0 after you create a file' AS expected FROM ntfs_journal_events WHERE time > 0
-UNION ALL SELECT 'ntfs category=windows_file_events', CAST(count(*) AS TEXT), '>0 - proves rename + backslash fix'
+UNION ALL SELECT 'ntfs category=windows_file_events', CAST(count(*) AS TEXT), '>0 after you create a file (post-restart)'
        FROM ntfs_journal_events WHERE time > 0 AND category='windows_file_events'
-UNION ALL SELECT 'ntfs category=Win_Yara_File_Path (old)', CAST(count(*) AS TEXT), '0 - old name is gone'
+UNION ALL SELECT 'ntfs category=Win_Yara_File_Path (old)', CAST(count(*) AS TEXT), '0, but pre-restart events can linger up to events_expiry'
        FROM ntfs_journal_events WHERE time > 0 AND category='Win_Yara_File_Path'
 UNION ALL SELECT 'windows_events',      CAST(count(*) AS TEXT), '>0' FROM windows_events WHERE time > 0
 UNION ALL SELECT 'windows_events 4104', CAST(count(*) AS TEXT), '0 - channel dropped in v4'

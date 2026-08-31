@@ -180,6 +180,11 @@ overrides:
         # RENAMED from Win_Yara_File_Path. Drives ntfs_journal_events, not YARA.
         # Breaking change: the `category` column value changes - update any saved
         # query filtering on 'Win_Yara_File_Path' when you apply this.
+        #
+        # NOTE: part of the original justification for this rename was a Windows
+        # path-escaping bug that turned out not to exist (fs::canonical normalises
+        # the doubled separators). See CORRECTIONS.md. Reverting the name to
+        # Win_Yara_File_Path is reasonable if you have detections keyed on it.
         windows_file_events:
           - 'C:\Users\%%\Desktop\%%'
           - 'C:\Users\%%\Downloads\%%'
