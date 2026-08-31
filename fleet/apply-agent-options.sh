@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Apply fleet/agent-options-v4.yml to a Fleet team.
+# Apply fleet/agent-options-v5.yml to a Fleet team.
 #
 # Reads credentials from the environment - nothing is hardcoded:
 #   export FLEET_URL='https://fleet-f9fl.onrender.com'
@@ -14,7 +14,7 @@
 # Dry run is the default. Nothing is written without --apply and a typed yes.
 set -euo pipefail
 
-YAML="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/agent-options-v4.yml"
+YAML="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/agent-options-v5.yml"
 TEAM=""; APPLY=0; GLOBAL=0; LIST=0
 
 while [ $# -gt 0 ]; do

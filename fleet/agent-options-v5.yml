@@ -1,5 +1,16 @@
-# Fleet agent options - v4
-# Updated 2026-08-31. Supersedes v3.
+# Fleet agent options - v5
+# Updated 2026-08-31. Supersedes v4.
+#
+# v5 REVERTS the v3 category rename. windows_file_events goes back to
+# Win_Yara_File_Path. The rename was justified partly by a Windows path-escaping
+# bug that does not exist - fs::canonical() normalises the doubled separators,
+# so the original paths always resolved. Proof: host WRK-AI emitted
+# ntfs_journal_events rows under Win_Yara_File_Path, and shouldEmit() cannot
+# emit for a category whose paths failed to resolve. See CORRECTIONS.md.
+#
+# The name is still inaccurate - the category drives ntfs_journal_events, not
+# YARA - but detection continuity beats cosmetics. Rename it deliberately, in
+# its own change, with the downstream queries updated in the same commit.
 #
 # YARA IS ON-DEMAND ONLY IN THIS VERSION.
 #   The yara_events tier is gone: no `yara.signatures`, no `yara.file_paths`,
@@ -17,7 +28,7 @@
 #   http, and paths with anything appended after .yar.
 #
 # Kept from v3:
-#   - Win_Yara_File_Path renamed to windows_file_events (drives ntfs_journal_events)
+#   - Windows file_paths category is Win_Yara_File_Path (v3 rename reverted in v5)
 #   - Windows paths single-quoted so YAML keeps the backslashes literal
 #   - Linux eventing on BPF; audit family off by decision
 
@@ -177,15 +188,15 @@ overrides:
           - SELECT uuid AS host_uuid FROM system_info;
           - SELECT hostname AS hostname FROM system_info;
       file_paths:
-        # RENAMED from Win_Yara_File_Path. Drives ntfs_journal_events, not YARA.
-        # Breaking change: the `category` column value changes - update any saved
-        # query filtering on 'Win_Yara_File_Path' when you apply this.
+        # Drives ntfs_journal_events, NOT YARA - the name is misleading and kept
+        # anyway. v3 renamed it to windows_file_events; v5 reverts that, because
+        # the rename changes the `category` column and breaks every saved query
+        # keyed on the old value, and the bug it was partly meant to fix was not
+        # real. See CORRECTIONS.md.
         #
-        # NOTE: part of the original justification for this rename was a Windows
-        # path-escaping bug that turned out not to exist (fs::canonical normalises
-        # the doubled separators). See CORRECTIONS.md. Reverting the name to
-        # Win_Yara_File_Path is reasonable if you have detections keyed on it.
-        windows_file_events:
+        # Paths stay single-quoted. That is not a fix - fs::canonical() collapses
+        # doubled separators either way - it is just unambiguous to read.
+        Win_Yara_File_Path:
           - 'C:\Users\%%\Desktop\%%'
           - 'C:\Users\%%\Downloads\%%'
           - 'C:\Users\%%\Documents\%%'

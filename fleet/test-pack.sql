@@ -162,7 +162,7 @@ UNION ALL SELECT 'dns_lookup_events',  count(*) FROM dns_lookup_events WHERE tim
 --      Create a file first: echo test > %USERPROFILE%\Downloads\fim-test.txt
 SELECT category, action, count(*) AS n
 FROM ntfs_journal_events WHERE time > 0 GROUP BY category, action ORDER BY n DESC;
--- Expect category = windows_file_events (renamed from Win_Yara_File_Path in v3).
+-- Expect category = Win_Yara_File_Path (the v3 rename was reverted in v5).
 -- NOTE: the v2 'backslash fix' addressed a bug that did not exist -
 -- fs::canonical() already normalised the doubled separators. See CORRECTIONS.md.
 

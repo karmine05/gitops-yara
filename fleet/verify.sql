@@ -78,11 +78,11 @@ WHERE pid = 1234 AND sigurl = 'https://raw.githubusercontent.com/karmine05/gitop
 -- ============================================================
 -- 7. Windows - RENAMED CATEGORY
 -- ------------------------------------------------------------
--- v3 renamed Win_Yara_File_Path -> windows_file_events. Update any saved query
--- filtering on the old value.
+-- v3 renamed this to windows_file_events; v5 reverted it. Expect the original
+-- Win_Yara_File_Path. See CORRECTIONS.md.
 -- ============================================================
 SELECT category, count(*) AS n FROM ntfs_journal_events GROUP BY category;
--- Expect windows_file_events, n>0 after a file changes under the monitored dirs.
+-- Expect Win_Yara_File_Path, n>0 after a file changes under the monitored dirs.
 
 -- ============================================================
 -- 8. Windows browser ATC tables  (returned 0 rows before v2 fixed escaping)
