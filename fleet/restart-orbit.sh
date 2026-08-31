@@ -132,7 +132,7 @@ EOF
 # ---------------------------------------------------------------- main
 LIST_ONLY=0
 case " $* " in *" --list "*) LIST_ONLY=1 ;; esac
-if [ "$LIST_ONLY" -eq 1 ] || [ "${#TARGETS[@]}" -eq 0 ]; then
+if [ "$LIST_ONLY" -eq 1 ] || { [ "${#TARGETS[@]}" -eq 0 ] && [ "$MODE" != "mac" ]; }; then
   echo "Targets (--list):"
   echo "  linux:  ${LINUX_HOSTS}"
   echo "  macos:  this machine, if it is the Mac mini (--mac-local)"
@@ -143,7 +143,7 @@ if [ "$LIST_ONLY" -eq 1 ] || [ "${#TARGETS[@]}" -eq 0 ]; then
   exit 0
 fi
 
-for ip in "${TARGETS[@]}"; do
+for ip in ${TARGETS[@]+"${TARGETS[@]}"}; do
   restart_linux "$ip"
 done
 if [ "$MODE" = "mac" ]; then
