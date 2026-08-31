@@ -203,7 +203,7 @@ FROM dns_lookup_events WHERE time > 0 ORDER BY time DESC LIMIT 20;
 -- 2. AUTO TABLE CONSTRUCTION (ATC)
 -- ############################################################################
 -- ATC reads SQLite files directly. Two things break it:
---   a) a wrong path glob - this is what the v2 backslash fix repaired on Windows
+--   a) a wrong path glob that resolves to nothing at subscription time
 --   b) the browser holding a lock on the DB. Close the browser if a table that
 --      should have rows returns none.
 
