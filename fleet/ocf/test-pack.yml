@@ -1,0 +1,543 @@
+# OCF reports for test-pack.sql. Import: fleetctl apply -f fleet/ocf/test-pack.yml
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Which publishers are alive and producing. active=1 events>0 working; active=1 events=0 paths or rules; active=0 flag missing or unsupported."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-0-1-publisher-status"
+  observer_can_run: false
+  platform: ""
+  query: "SELECT name, publisher, type, subscriptions, events, refreshes, active FROM osquery_events ORDER BY active DESC, events DESC;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Which evented/ATC tables actually exist in this build. Separates table missing from table present but empty."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-0-2-evented-table-existence"
+  observer_can_run: false
+  platform: ""
+  query: "SELECT name, active FROM osquery_registry WHERE registry = 'table' AND name IN ( 'es_process_events','es_process_file_events','file_events','yara_events', 'yara_file','yara_process','bpf_process_events','bpf_socket_events', 'process_events','socket_events','user_events','process_file_events', 'ntfs_journal_events','windows_events','powershell_events', 'process_etw_events','dns_lookup_events', 'quarantine_items','chrome_url_history','chrome_download_history', 'firefox_url_history','edge_url_history' ) ORDER BY name;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Did the v5 flags land. yara_sigurl_authenticate must be false; windows_event_channels should be Security,Application,System."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-0-3-v5-flags"
+  observer_can_run: false
+  platform: ""
+  query: "SELECT name, value, default_value FROM osquery_flags WHERE name IN ( 'disable_events','events_expiry','events_max','enable_file_events', 'enable_bpf_events','disable_audit','disable_endpointsecurity', 'disable_endpointsecurity_fim','enable_ntfs_event_publisher', 'enable_windows_events_publisher','enable_powershell_events_subscriber', 'enable_process_etw_events','enable_dns_lookup_events', 'windows_event_channels','yara_sigurl_authenticate','yara_delay', 'disable_watchdog' ) ORDER BY name;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Agent version and cost. resident_size lives on processes, joined on pid. Check a day after rollout, especially Windows."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-0-4-version-cost"
+  observer_can_run: false
+  platform: ""
+  query: "SELECT i.version, i.build_platform, i.config_valid, p.resident_size, p.user_time, p.system_time, (strftime('%s','now') - p.start_time) AS uptime_seconds FROM osquery_info i JOIN processes p ON p.pid = i.pid;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Consolidated macOS evented counts. yara_events = 0 is correct in v5; es_* = 0 usually means Full Disk Access is missing."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-1-1-macos-evented-counts"
+  observer_can_run: false
+  platform: "darwin"
+  query: "SELECT 'es_process_events'      AS tbl, count(*) AS n FROM es_process_events WHERE time > 0 UNION ALL SELECT 'es_process_file_events', count(*) FROM es_process_file_events WHERE time > 0 UNION ALL SELECT 'file_events',            count(*) FROM file_events WHERE time > 0 UNION ALL SELECT 'yara_events',            count(*) FROM yara_events WHERE time > 0;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "macOS process eventing detail."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-1-2-macos-process-detail"
+  observer_can_run: false
+  platform: "darwin"
+  query: "SELECT datetime(time,'unixepoch') AS t, event_type, pid, path, cmdline, username, signing_id, team_id, platform_binary FROM es_process_events WHERE time > 0 ORDER BY time DESC LIMIT 20;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "macOS ES file eventing detail."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-1-3-macos-es-file-detail"
+  observer_can_run: false
+  platform: "darwin"
+  query: "SELECT datetime(time,'unixepoch') AS t, event_type, pid, path, dest_filename FROM es_process_file_events WHERE time > 0 ORDER BY time DESC LIMIT 20;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "macOS FIM. Touch a file in Downloads first."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-1-4-macos-fim"
+  observer_can_run: false
+  platform: "darwin"
+  query: "SELECT datetime(time,'unixepoch') AS t, target_path, category, action, size, sha256 FROM file_events WHERE time > 0 AND category = 'Mac_Yara_File_Path' ORDER BY time DESC LIMIT 20;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Consolidated Linux evented counts. The audit family SHOULD be 0 (disable_audit); file_events is the one that must be non-zero."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-1-5-linux-evented-counts"
+  observer_can_run: false
+  platform: "linux"
+  query: "SELECT 'file_events'        AS tbl, count(*) AS n FROM file_events WHERE time > 0 UNION ALL SELECT 'process_events',      count(*) FROM process_events WHERE time > 0 UNION ALL SELECT 'socket_events',       count(*) FROM socket_events WHERE time > 0 UNION ALL SELECT 'user_events',         count(*) FROM user_events WHERE time > 0 UNION ALL SELECT 'process_file_events', count(*) FROM process_file_events WHERE time > 0;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Linux FIM. Touch /tmp/fim-test.txt first."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-1-6-linux-fim"
+  observer_can_run: false
+  platform: "linux"
+  query: "SELECT datetime(time,'unixepoch') AS t, target_path, category, action, size, sha256 FROM file_events WHERE time > 0 AND category = 'ubuntu_file_events' ORDER BY time DESC LIMIT 20;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Linux process eventing canary. See the bpf canary report before trusting this."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-1-7-bpf-count"
+  observer_can_run: false
+  platform: "linux"
+  query: "SELECT count(*) AS n FROM bpf_process_events;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Consolidated Windows evented counts."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-1-8-windows-evented-counts"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT 'ntfs_journal_events' AS tbl, count(*) AS n FROM ntfs_journal_events WHERE time > 0 UNION ALL SELECT 'windows_events',     count(*) FROM windows_events WHERE time > 0 UNION ALL SELECT 'powershell_events',  count(*) FROM powershell_events WHERE time > 0 UNION ALL SELECT 'process_etw_events', count(*) FROM process_etw_events WHERE time > 0 UNION ALL SELECT 'dns_lookup_events',  count(*) FROM dns_lookup_events WHERE time > 0;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "NTFS journal + the renamed category. Create a file in Downloads first; expect Win_Yara_File_Path."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-1-9-ntfs-category"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT category, action, count(*) AS n FROM ntfs_journal_events WHERE time > 0 GROUP BY category, action ORDER BY n DESC;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "NTFS journal detail."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-1-10-ntfs-detail"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT datetime(time,'unixepoch') AS t, action, category, path, old_path, drive_letter FROM ntfs_journal_events WHERE time > 0 ORDER BY time DESC LIMIT 20;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Windows event log channels. Expect only Security, Application, System."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-1-11-win-event-channels"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT source, provider_name, eventid, count(*) AS n FROM windows_events WHERE time > 0 GROUP BY source, provider_name, eventid ORDER BY n DESC LIMIT 25;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "PowerShell de-duplication check. in_windows_events must be 0 in v5."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-1-12-powershell-dedup"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT (SELECT count(*) FROM windows_events WHERE time > 0 AND eventid = 4104) AS in_windows_events, (SELECT count(*) FROM powershell_events WHERE time > 0)    AS in_powershell_events;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "PowerShell script blocks."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-1-13-powershell-blocks"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT datetime(time,'unixepoch') AS t, script_name, script_path, cosine_similarity, substr(script_text,1,200) AS script_head FROM powershell_events WHERE time > 0 ORDER BY time DESC LIMIT 10;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "ETW process events."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-1-14-etw-detail"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT datetime(time,'unixepoch') AS t, type, pid, ppid, username, token_elevation_type, path, cmdline FROM process_etw_events WHERE time > 0 ORDER BY time DESC LIMIT 20;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "DNS lookups. Generate one first: nslookup example.com."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-1-15-dns"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT datetime(time,'unixepoch') AS t, pid, path, username, name, type, response FROM dns_lookup_events WHERE time > 0 ORDER BY time DESC LIMIT 20;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Consolidated macOS ATC counts."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-2-1-macos-atc-counts"
+  observer_can_run: false
+  platform: "darwin"
+  query: "SELECT 'quarantine_items'        AS tbl, count(*) AS n FROM quarantine_items UNION ALL SELECT 'chrome_url_history',      count(*) FROM chrome_url_history UNION ALL SELECT 'chrome_download_history', count(*) FROM chrome_download_history UNION ALL SELECT 'firefox_url_history',     count(*) FROM firefox_url_history;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Consolidated Windows ATC counts."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-2-2-windows-atc-counts"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT 'chrome_url_history'      AS tbl, count(*) AS n FROM chrome_url_history UNION ALL SELECT 'edge_url_history',        count(*) FROM edge_url_history UNION ALL SELECT 'chrome_download_history', count(*) FROM chrome_download_history UNION ALL SELECT 'firefox_url_history',     count(*) FROM firefox_url_history;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "macOS quarantine: what did Gatekeeper tag, and where did it come from. Apple epoch is 2001-01-01, hence the +978307200 offset."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-2-3-macos-quarantine"
+  observer_can_run: false
+  platform: "darwin"
+  query: "SELECT datetime(timestamp + 978307200,'unixepoch') AS downloaded, agent_name, origin_url, data_url, sender_name FROM quarantine_items ORDER BY timestamp DESC LIMIT 25;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Recent downloads from chrome_download_history."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-2-4-recent-downloads"
+  observer_can_run: false
+  platform: "darwin,windows"
+  query: "SELECT id, current_path, target_path FROM chrome_download_history ORDER BY id DESC LIMIT 25;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Browsing history sanity check. Chrome/Edge timestamps are microseconds since 1601-01-01."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-2-5-chrome-history"
+  observer_can_run: false
+  platform: "darwin,windows"
+  query: "SELECT url, title, visit_count, datetime(last_visit_time/1000000 - 11644473600,'unixepoch') AS last_visit FROM chrome_url_history WHERE visit_count > 0 ORDER BY last_visit_time DESC LIMIT 25;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Firefox history. Firefox uses microseconds since 1970."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-2-6-firefox-history"
+  observer_can_run: false
+  platform: "darwin,windows"
+  query: "SELECT url, title, visit_count, datetime(last_visit_date/1000000,'unixepoch') AS last_visit FROM firefox_url_history WHERE visit_count > 0 ORDER BY last_visit_date DESC LIMIT 25;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Cross-check ATC against FIM: a download that Gatekeeper quarantined AND that FIM saw land on disk."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-2-7-atc-vs-fim"
+  observer_can_run: false
+  platform: "darwin"
+  query: "SELECT q.origin_url, q.agent_name, f.target_path, f.sha256, datetime(f.time,'unixepoch') AS seen FROM quarantine_items q JOIN file_events f ON f.target_path LIKE '%' || q.data_url || '%' ORDER BY f.time DESC LIMIT 20;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "YARA smoke test. Create /tmp/eicar.com first; expect count=1, matches Multi_EICAR_ac8f42d6."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-3-1-yara-eicar"
+  observer_can_run: false
+  platform: "darwin,linux"
+  query: "SELECT path, count, matches FROM yara_file WHERE path = '/tmp/eicar.com' AND sigurl = 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/multi/eicar.yar';"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Targeted YARA scan by category, small fetch, fast."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-3-2-yara-ransomware"
+  observer_can_run: false
+  platform: "linux"
+  query: "SELECT path, count, matches FROM yara_file WHERE path = '/tmp/suspect.bin' AND sigurl = 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/linux/ransomware.yar';"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Whole-platform YARA scan of one file."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-3-3-yara-linux-all"
+  observer_can_run: false
+  platform: "linux"
+  query: "SELECT path, count, matches FROM yara_file WHERE path = '/tmp/suspect.bin' AND sigurl = 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/linux/_all.yar';"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Directory YARA sweep. yara_delay is paid per file; keep the glob narrow."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-3-4-yara-mac-sweep"
+  observer_can_run: false
+  platform: "darwin"
+  query: "SELECT path, count, matches FROM yara_file WHERE path LIKE '/Users/%/Downloads/%%' AND sigurl = 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos/_all.yar' AND count > 0;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Process memory YARA scan."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-3-5-yara-process"
+  observer_can_run: false
+  platform: "linux"
+  query: "SELECT pid, count, matches FROM yara_process WHERE pid = 1234 AND sigurl = 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/linux/_all.yar';"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "The pattern that replaces yara_events: let FIM pick the scan targets."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-3-6-fim-feed-scan"
+  observer_can_run: false
+  platform: ""
+  query: "SELECT datetime(time,'unixepoch') AS t, target_path, category, action, size, sha256 FROM file_events WHERE time > 0 AND action IN ('CREATED','UPDATED') AND size > 0 ORDER BY time DESC LIMIT 50;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Confirm the signature-base URL still works alongside your own repo."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-3-7-signature-base-check"
+  observer_can_run: false
+  platform: ""
+  query: "SELECT path, count, matches FROM yara_file WHERE path = '/tmp/eicar.com' AND sigurl = 'https://raw.githubusercontent.com/Neo23x0/signature-base/master/yara/generic_anomalies.yar';"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "BPF canary: 5.23.1 is the last release with BPF eventing. Run on every Linux host after any agent upgrade."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "test-4-bpf-canary"
+  observer_can_run: false
+  platform: "linux"
+  query: "SELECT (SELECT version FROM osquery_info)                                          AS osquery_version, (SELECT count(*) FROM osquery_flags WHERE name='enable_bpf_events')         AS bpf_flag_exists, (SELECT count(*) FROM osquery_registry WHERE registry='table' AND name='bpf_process_events')                    AS bpf_table_exists, (SELECT count(*) FROM osquery_flags WHERE name='disable_audit' AND value='false')                            AS audit_enabled;"

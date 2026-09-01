@@ -1,0 +1,191 @@
+# OCF reports for verify.sql. Import: fleetctl apply -f fleet/ocf/verify.yml
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Flags landed check; needs a fleetd restart after applying v5. yara_sigurl_authenticate must be false."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "verify-1-flags"
+  observer_can_run: false
+  platform: ""
+  query: "SELECT name, value, default_value FROM osquery_flags WHERE name IN ( 'disable_events','events_expiry','events_max','enable_file_events', 'enable_bpf_events','disable_endpointsecurity','disable_endpointsecurity_fim', 'enable_ntfs_event_publisher','enable_process_etw_events', 'enable_dns_lookup_events','windows_event_channels', 'yara_sigurl_authenticate','yara_delay' );"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "YARA smoke test proving the allowlist and the fetch both work. Create /tmp/eicar.com first."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "verify-2-yara-eicar"
+  observer_can_run: false
+  platform: "darwin,linux"
+  query: "SELECT path, count, matches FROM yara_file WHERE path = '/tmp/eicar.com' AND sigurl = 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/multi/eicar.yar';"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Targeted YARA hunt: one category, small fetch."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "verify-3-hunt-linux-ransomware"
+  observer_can_run: false
+  platform: "linux"
+  query: "SELECT path, count, matches FROM yara_file WHERE path = '/tmp/suspect.bin' AND sigurl = 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/linux/ransomware.yar';"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Targeted YARA hunt: one category, small fetch."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "verify-3-hunt-macos-infostealer"
+  observer_can_run: false
+  platform: "darwin"
+  query: "SELECT path, count, matches FROM yara_file WHERE path = '/tmp/suspect.bin' AND sigurl = 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos/infostealer.yar';"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Targeted YARA hunt: one category, small fetch."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "verify-3-hunt-windows-vulndriver"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT path, count, matches FROM yara_file WHERE path = '/tmp/suspect.bin' AND sigurl = 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/vulndriver.yar';"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Directory sweep. yara_delay is paid per file; narrow the path or lower yara_delay for sweeps."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "verify-4-dir-sweep"
+  observer_can_run: false
+  platform: "darwin"
+  query: "SELECT path, count, matches FROM yara_file WHERE path LIKE '/Users/%/Downloads/%%' AND sigurl = 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos/_all.yar' AND count > 0;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Scan only what changed: FIM feeds the hunt, the pattern that replaces yara_events."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "verify-5-fim-feed"
+  observer_can_run: false
+  platform: ""
+  query: "SELECT datetime(time,'unixepoch') AS t, target_path, category, action FROM file_events WHERE action IN ('CREATED','UPDATED') ORDER BY time DESC LIMIT 50;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Process memory YARA scan."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "verify-6-process-memory"
+  observer_can_run: false
+  platform: "linux"
+  query: "SELECT pid, count, matches FROM yara_process WHERE pid = 1234 AND sigurl = 'https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/linux/_all.yar';"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Windows NTFS category check; v5 reverted the v3 rename, expect Win_Yara_File_Path."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "verify-7-ntfs-category"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT category, count(*) AS n FROM ntfs_journal_events GROUP BY category;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Windows browser ATC table row counts."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "verify-8-browser-atc"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT (SELECT count(*) FROM chrome_url_history)      AS chrome_history, (SELECT count(*) FROM edge_url_history)        AS edge_history, (SELECT count(*) FROM chrome_download_history) AS chrome_downloads, (SELECT count(*) FROM firefox_url_history)     AS firefox_history;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "PowerShell de-duplication; in_windows_events should be 0, the channel was dropped from the list."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "verify-9-powershell-dedup"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT (SELECT count(*) FROM windows_events WHERE eventid = 4104) AS in_windows_events, (SELECT count(*) FROM powershell_events)                   AS in_powershell_events;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Publishers still healthy. yara_events should now be absent or inactive; that is expected in v5."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "verify-10-publishers"
+  observer_can_run: false
+  platform: ""
+  query: "SELECT name, publisher, type, subscriptions, events, active FROM osquery_events ORDER BY events DESC;"
