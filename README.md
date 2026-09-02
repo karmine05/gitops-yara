@@ -170,3 +170,9 @@ process or socket eventing at all**, and nothing would raise an error.
 Section 4 of [`fleet/test-pack.sql`](fleet/test-pack.sql) is the canary. Run it
 on every Linux host after any agent upgrade. If it trips, either switch the
 Linux hosts to the audit family in their own team, or pin the agent version.
+
+## Fleet reports
+
+`fleet/*.sql` are the live queries. `fleet/ocsf/` holds the same queries as
+Fleet report specs (`kind: report`); `detect.yml` emits OCSF 1.4.0 events. See
+[`fleet/ocsf/README.md`](fleet/ocsf/README.md).

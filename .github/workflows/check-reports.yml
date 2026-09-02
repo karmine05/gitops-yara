@@ -1,0 +1,15 @@
+name: check-reports
+on:
+  push:
+    paths: ['fleet/**', 'tools/sync_reports.py']
+  pull_request:
+    paths: ['fleet/**', 'tools/sync_reports.py']
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install pyyaml
+      - run: python3 tools/sync_reports.py --check

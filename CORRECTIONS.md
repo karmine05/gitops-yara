@@ -67,3 +67,55 @@ publisher is healthy.
 returns only events since that query last ran, and the cursor survives restarts.
 Rerunning returns 0 and looks identical to a dead publisher. Every verification
 query now carries `WHERE time > 0`. See the header block in `fleet/test-pack.sql`.
+
+## 5. FSEvents action names are CREATED / UPDATED
+
+**Claimed:** detect.sql query 5 filtered `file_events` with
+`action IN ('CREATE','UPDATE')`.
+
+**Actually:** osquery's FSEvents publisher (`osquery/events/darwin/fsevents.cpp`,
+`kMaskActions`) emits `CREATED`, `UPDATED`, `DELETED`, `MOVED_TO`,
+`ATTRIBUTES_MODIFIED`, `MOUNTED`, `UNMOUNTED`, `ROOT_CHANGED`,
+`COLLISION_WITHIN` and `UNKNOWN`. The filter matched nothing. test-pack.sql 3.6
+and verify.sql 5 already used the right names. Fixed 2026-09-02.
+
+## 6. `quarantine_items.data_url` is a remote URL
+
+**Claimed:** detect.sql query 8 joined `file_events.target_path` to
+`quarantine_items.data_url` to line up a download with its FIM sighting.
+
+**Actually:** `LSQuarantineDataURLString` is the URL the bytes were downloaded
+from and `LSQuarantineOriginURLString` is the referring page. Neither is a local
+path, so the join never matched and the FIM columns were always NULL. The
+quarantine database does not store the local path; the file's
+`com.apple.quarantine` xattr carries the event id instead. The join is gone.
+The report now lists quarantine downloads with the source URL, the file name
+taken from that URL, and the downloading app.
+
+## 7. Security event 4720 is "user account created"
+
+**Claimed:** comments and the report description called 4720 "account locked".
+
+**Actually:** 4720 is "A user account was created". Account lockout is 4740.
+The report maps 4720 to OCSF Account Change / Create.
+
+## 8. `ntfs_journal_events` action names are CamelCase
+
+**Claimed:** detect.sql query 6 filtered on
+`'FILE_RENAME_OLD','FILE_RENAME_NEW','FILE_DELETE'`.
+
+**Actually:** `kNTFSEventToStringMap` in
+`osquery/events/windows/usn_journal_reader.cpp` emits `FileCreation`,
+`FileDeletion`, `FileRename_OldName`, `FileRename_NewName`, `FileWrite`,
+`AttributesChange` and the `Directory*` equivalents. The old filter matched
+nothing; query 7 (activity by action) was the only one that would have shown
+the real values.
+
+## 9. `dns_lookup_events` already carries the process
+
+**Claimed:** query 3 needed a LEFT JOIN to `process_etw_events` for the
+username.
+
+**Actually:** `dns_lookup_events` has `pid`, `path` and `username` columns. The
+join was redundant and, because pids are reused, could return one DNS row per
+matching ProcessStart. Removed.

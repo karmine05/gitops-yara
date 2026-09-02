@@ -1,0 +1,351 @@
+# Fleet report specs for detect.sql; every row is an OCSF 1.4.0 event. Import: fleetctl apply -f fleet/ocsf/detect.yml
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Per-publisher row counts since last run of this query."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-0-1-publisher-row-counts"
+  observer_can_run: false
+  platform: ""
+  query: "SELECT name, publisher, events, active FROM osquery_events ORDER BY events DESC;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Distinct binaries executed, with activity count and the user(s) who ran them."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-mac-1-executables"
+  observer_can_run: false
+  platform: "darwin"
+  query: "SELECT 1007 AS class_uid, 'Process Activity' AS class_name, 1 AS category_uid, 'System Activity' AS category_name, 1 AS activity_id, 'Launch' AS activity_name, 100701 AS type_uid, 1 AS severity_id, 'Informational' AS severity, max(time)*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', max(time), 'unixepoch') AS time_dt, min(time)*1000 AS start_time, max(time)*1000 AS end_time, count(*) AS count, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'es_process_events' AS \"metadata.log_name\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", path AS \"process.file.path\", group_concat(DISTINCT username) AS \"unmapped.users\" FROM es_process_events WHERE time > 0 AND event_type = 'EXEC' GROUP BY path ORDER BY count DESC LIMIT 50;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Unsigned or ad-hoc binaries executed. codesigning_flags is a comma list: NOT_VALID, ADHOC, NOT_RUNTIME, INSTALLER."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-mac-2-unsigned-adhoc-exec"
+  observer_can_run: false
+  platform: "darwin"
+  query: "SELECT 1007 AS class_uid, 'Process Activity' AS class_name, 1 AS category_uid, 'System Activity' AS category_name, 1 AS activity_id, 'Launch' AS activity_name, 100701 AS type_uid, 3 AS severity_id, 'Medium' AS severity, time*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', time, 'unixepoch') AS time_dt, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'es_process_events' AS \"metadata.log_name\", eid AS \"metadata.uid\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", pid AS \"process.pid\", path AS \"process.file.path\", substr(cmdline, 1, 200) AS \"process.cmd_line\", username AS \"process.user.name\", parent AS \"actor.process.pid\", codesigning_flags AS \"unmapped.codesigning_flags\" FROM es_process_events WHERE time > 0 AND event_type = 'EXEC' AND (codesigning_flags LIKE '%ADHOC%' OR codesigning_flags LIKE '%NOT_VALID%') ORDER BY time DESC LIMIT 25;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Shell-spawned interpreters and download tools; parent and child joined from es_process_events on pid."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-mac-3-shell-spawned-downloads"
+  observer_can_run: false
+  platform: "darwin"
+  query: "SELECT 1007 AS class_uid, 'Process Activity' AS class_name, 1 AS category_uid, 'System Activity' AS category_name, 1 AS activity_id, 'Launch' AS activity_name, 100701 AS type_uid, 3 AS severity_id, 'Medium' AS severity, e.time*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', e.time, 'unixepoch') AS time_dt, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'es_process_events' AS \"metadata.log_name\", e.eid AS \"metadata.uid\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", e.pid AS \"process.pid\", e.path AS \"process.file.path\", substr(e.cmdline, 1, 200) AS \"process.cmd_line\", e.username AS \"process.user.name\", p.pid AS \"actor.process.pid\", p.path AS \"actor.process.file.path\" FROM es_process_events e JOIN es_process_events p ON e.parent = p.pid AND p.time > 0 WHERE e.time > 0 AND e.event_type = 'EXEC' AND (e.path LIKE '%/curl' OR e.path LIKE '%/wget' OR e.path LIKE '%/python3' OR e.path LIKE '%/perl' OR e.path LIKE '%/base64') AND (p.path LIKE '%/zsh' OR p.path LIKE '%/bash' OR p.path LIKE '%/sh' OR p.path LIKE '%/ssh' OR p.path LIKE '%/fish' OR p.path LIKE '%/tmux') ORDER BY e.time DESC LIMIT 25;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "FIM changes with the writing process; es_process_file_events pairs each monitored-path change with the pid."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-mac-4-fim-with-writer"
+  observer_can_run: false
+  platform: "darwin"
+  query: "SELECT 1001 AS class_uid, 'File System Activity' AS class_name, 1 AS category_uid, 'System Activity' AS category_name, act AS activity_id, CASE act WHEN 1 THEN 'Create' WHEN 3 THEN 'Update' WHEN 5 THEN 'Rename' WHEN 14 THEN 'Open' ELSE 'Other' END AS activity_name, 100100 + act AS type_uid, 1 AS severity_id, 'Informational' AS severity, time*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', time, 'unixepoch') AS time_dt, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'es_process_file_events' AS \"metadata.log_name\", eid AS \"metadata.uid\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", filename AS \"file.path\", nullif(dest_filename, '') AS \"file_result.path\", pid AS \"actor.process.pid\", path AS \"actor.process.file.path\", parent AS \"actor.process.parent_process.pid\", event_type AS \"unmapped.event_type\" FROM (SELECT *, CASE event_type WHEN 'create' THEN 1 WHEN 'write' THEN 3 WHEN 'truncate' THEN 3 WHEN 'rename' THEN 5 WHEN 'open' THEN 14 ELSE 99 END AS act FROM es_process_file_events WHERE time > 0) ORDER BY time DESC LIMIT 50;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Hashed file changes, ready for a YARA scan. sha256 is only populated when hashed = 1; the size cap keeps the sweep under a sensible yara_delay budget."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-mac-5-hashed-changes-for-yara"
+  observer_can_run: false
+  platform: "darwin"
+  query: "SELECT 1001 AS class_uid, 'File System Activity' AS class_name, 1 AS category_uid, 'System Activity' AS category_name, CASE action WHEN 'CREATED' THEN 1 ELSE 3 END AS activity_id, CASE action WHEN 'CREATED' THEN 'Create' ELSE 'Update' END AS activity_name, CASE action WHEN 'CREATED' THEN 100101 ELSE 100103 END AS type_uid, 1 AS severity_id, 'Informational' AS severity, time*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', time, 'unixepoch') AS time_dt, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'file_events' AS \"metadata.log_name\", eid AS \"metadata.uid\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", target_path AS \"file.path\", size AS \"file.size\", 3 AS \"file.hashes[0].algorithm_id\", 'SHA-256' AS \"file.hashes[0].algorithm\", sha256 AS \"file.hashes[0].value\", category AS \"unmapped.category\", action AS \"unmapped.action\" FROM file_events WHERE time > 0 AND action IN ('CREATED','UPDATED') AND size > 0 AND size < 104857600 AND hashed = 1 ORDER BY time DESC LIMIT 50;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Downloads that FIM also saw; chrome_download_history (ATC) joined to the file_events FIM stream."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-mac-6-downloads-vs-fim"
+  observer_can_run: false
+  platform: "darwin"
+  query: "SELECT 1001 AS class_uid, 'File System Activity' AS class_name, 1 AS category_uid, 'System Activity' AS category_name, 1 AS activity_id, 'Create' AS activity_name, 100101 AS type_uid, 1 AS severity_id, 'Informational' AS severity, coalesce(f.time, CAST(strftime('%s','now') AS INTEGER))*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', coalesce(f.time, CAST(strftime('%s','now') AS INTEGER)), 'unixepoch') AS time_dt, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'chrome_download_history' AS \"metadata.log_name\", d.id AS \"metadata.uid\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", d.target_path AS \"file.path\", f.size AS \"file.size\", CASE WHEN f.sha256 != '' THEN 3 END AS \"file.hashes[0].algorithm_id\", CASE WHEN f.sha256 != '' THEN 'SHA-256' END AS \"file.hashes[0].algorithm\", nullif(f.sha256, '') AS \"file.hashes[0].value\", f.action AS \"unmapped.fim_action\" FROM chrome_download_history d LEFT JOIN file_events f ON f.target_path = d.target_path AND f.time > 0 ORDER BY d.id DESC LIMIT 25;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Browser history pointing at executables and scripts. Chrome timestamps are microseconds since 1601-01-01."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-mac-7-browser-history-executables"
+  observer_can_run: false
+  platform: "darwin"
+  query: "SELECT 4002 AS class_uid, 'HTTP Activity' AS class_name, 4 AS category_uid, 'Network Activity' AS category_name, 3 AS activity_id, 'Get' AS activity_name, 400203 AS type_uid, 2 AS severity_id, 'Low' AS severity, (last_visit_time/1000000 - 11644473600)*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', last_visit_time/1000000 - 11644473600, 'unixepoch') AS time_dt, visit_count AS count, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'chrome_url_history' AS \"metadata.log_name\", id AS \"metadata.uid\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", 'GET' AS \"http_request.http_method\", url AS \"http_request.url.url_string\", title AS \"unmapped.title\" FROM chrome_url_history WHERE url LIKE '%.exe%' OR url LIKE '%.scr%' OR url LIKE '%.vbs%' OR url LIKE '%.js%' OR url LIKE '%.bat%' OR url LIKE '%.php?%' ORDER BY last_visit_time DESC LIMIT 25;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Quarantine downloads: Gatekeeper's record of what each app fetched, with the source URL. data_url is remote, so there is no FIM join. Apple epoch is 2001-01-01, hence the +978307200 offset."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-mac-8-quarantine-triangulation"
+  observer_can_run: false
+  platform: "darwin"
+  query: "SELECT 1001 AS class_uid, 'File System Activity' AS class_name, 1 AS category_uid, 'System Activity' AS category_name, 1 AS activity_id, 'Create' AS activity_name, 100101 AS type_uid, 2 AS severity_id, 'Low' AS severity, CAST((timestamp + 978307200)*1000 AS INTEGER) AS time, strftime('%Y-%m-%dT%H:%M:%SZ', timestamp + 978307200, 'unixepoch') AS time_dt, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'quarantine_items' AS \"metadata.log_name\", id AS \"metadata.uid\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", replace(data_url, rtrim(data_url, replace(data_url, '/', '')), '') AS \"file.name\", data_url AS \"file.url.url_string\", agent_name AS \"actor.process.name\", origin_url AS \"unmapped.origin_url\" FROM quarantine_items ORDER BY timestamp DESC LIMIT 25;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "BPF process activity, recent executions. probe_error = 0 filters probe failures."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-linux-1-bpf-recent-execs"
+  observer_can_run: false
+  platform: "linux"
+  query: "SELECT 1007 AS class_uid, 'Process Activity' AS class_name, 1 AS category_uid, 'System Activity' AS category_name, 1 AS activity_id, 'Launch' AS activity_name, 100701 AS type_uid, 1 AS severity_id, 'Informational' AS severity, time*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', time, 'unixepoch') AS time_dt, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'bpf_process_events' AS \"metadata.log_name\", eid AS \"metadata.uid\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", pid AS \"process.pid\", path AS \"process.file.path\", substr(cmdline, 1, 200) AS \"process.cmd_line\", cwd AS \"process.working_directory\", uid AS \"process.user.uid\", parent AS \"actor.process.pid\" FROM bpf_process_events WHERE time > 0 AND probe_error = 0 ORDER BY time DESC LIMIT 50;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "BPF process activity, distinct binaries and counts."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-linux-2-bpf-distinct-binaries"
+  observer_can_run: false
+  platform: "linux"
+  query: "SELECT 1007 AS class_uid, 'Process Activity' AS class_name, 1 AS category_uid, 'System Activity' AS category_name, 1 AS activity_id, 'Launch' AS activity_name, 100701 AS type_uid, 1 AS severity_id, 'Informational' AS severity, max(time)*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', max(time), 'unixepoch') AS time_dt, min(time)*1000 AS start_time, max(time)*1000 AS end_time, count(*) AS count, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'bpf_process_events' AS \"metadata.log_name\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", path AS \"process.file.path\" FROM bpf_process_events WHERE time > 0 AND probe_error = 0 GROUP BY path ORDER BY count DESC LIMIT 50;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "BPF socket activity, outbound connects. If empty, drop the syscall filter and look at the syscall values that come back."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-linux-3-bpf-outbound-connects"
+  observer_can_run: false
+  platform: "linux"
+  query: "SELECT 4001 AS class_uid, 'Network Activity' AS class_name, 4 AS category_uid, 'Network Activity' AS category_name, 1 AS activity_id, 'Open' AS activity_name, 400101 AS type_uid, 1 AS severity_id, 'Informational' AS severity, time*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', time, 'unixepoch') AS time_dt, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'bpf_socket_events' AS \"metadata.log_name\", eid AS \"metadata.uid\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", remote_address AS \"dst_endpoint.ip\", remote_port AS \"dst_endpoint.port\", 2 AS \"connection_info.direction_id\", 'Outbound' AS \"connection_info.direction\", pid AS \"actor.process.pid\", path AS \"actor.process.file.path\", syscall AS \"unmapped.syscall\" FROM bpf_socket_events WHERE time > 0 AND probe_error = 0 AND syscall = 'connect' ORDER BY time DESC LIMIT 50;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "BPF socket activity, what is talking to what."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-linux-4-bpf-talks-to"
+  observer_can_run: false
+  platform: "linux"
+  query: "SELECT 4001 AS class_uid, 'Network Activity' AS class_name, 4 AS category_uid, 'Network Activity' AS category_name, 1 AS activity_id, 'Open' AS activity_name, 400101 AS type_uid, 1 AS severity_id, 'Informational' AS severity, max(time)*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', max(time), 'unixepoch') AS time_dt, min(time)*1000 AS start_time, max(time)*1000 AS end_time, count(*) AS count, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'bpf_socket_events' AS \"metadata.log_name\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", remote_address AS \"dst_endpoint.ip\", remote_port AS \"dst_endpoint.port\", 2 AS \"connection_info.direction_id\", 'Outbound' AS \"connection_info.direction\", path AS \"actor.process.file.path\" FROM bpf_socket_events WHERE time > 0 AND probe_error = 0 AND syscall = 'connect' GROUP BY path, remote_address, remote_port ORDER BY count DESC LIMIT 50;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Process starts by binary, elevation level, and user."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-win-1-etw-starts-by-binary"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT 1007 AS class_uid, 'Process Activity' AS class_name, 1 AS category_uid, 'System Activity' AS category_name, 1 AS activity_id, 'Launch' AS activity_name, 100701 AS type_uid, 1 AS severity_id, 'Informational' AS severity, max(time)*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', max(time), 'unixepoch') AS time_dt, min(time)*1000 AS start_time, max(time)*1000 AS end_time, count(*) AS count, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'process_etw_events' AS \"metadata.log_name\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", path AS \"process.file.path\", substr(cmdline, 1, 150) AS \"process.cmd_line\", username AS \"process.user.name\", token_elevation_type AS \"unmapped.token_elevation_type\" FROM process_etw_events WHERE time > 0 AND type = 'ProcessStart' GROUP BY path, cmdline, username, token_elevation_type ORDER BY time DESC LIMIT 50;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Elevated process starts only (TokenElevationTypeFull)."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-win-2-elevated-starts"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT 1007 AS class_uid, 'Process Activity' AS class_name, 1 AS category_uid, 'System Activity' AS category_name, 1 AS activity_id, 'Launch' AS activity_name, 100701 AS type_uid, 3 AS severity_id, 'Medium' AS severity, time*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', time, 'unixepoch') AS time_dt, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'process_etw_events' AS \"metadata.log_name\", eid AS \"metadata.uid\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", pid AS \"process.pid\", path AS \"process.file.path\", substr(cmdline, 1, 200) AS \"process.cmd_line\", username AS \"process.user.name\", ppid AS \"actor.process.pid\", token_elevation_type AS \"unmapped.token_elevation_type\" FROM process_etw_events WHERE time > 0 AND type = 'ProcessStart' AND token_elevation_type = 'TokenElevationTypeFull' ORDER BY time DESC LIMIT 25;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "DNS lookups with the calling process; dns_lookup_events carries pid, path and username itself."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-win-3-dns-with-caller"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT 4003 AS class_uid, 'DNS Activity' AS class_name, 4 AS category_uid, 'Network Activity' AS category_name, act AS activity_id, CASE act WHEN 2 THEN 'Response' ELSE 'Query' END AS activity_name, 400300 + act AS type_uid, 1 AS severity_id, 'Informational' AS severity, time*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', time, 'unixepoch') AS time_dt, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'dns_lookup_events' AS \"metadata.log_name\", eid AS \"metadata.uid\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", name AS \"query.hostname\", type AS \"query.type\", nullif(response, '') AS \"answers[0].rdata\", pid AS \"actor.process.pid\", path AS \"actor.process.file.path\", username AS \"actor.user.name\" FROM (SELECT *, CASE WHEN coalesce(response, '') != '' THEN 2 ELSE 1 END AS act FROM dns_lookup_events WHERE time > 0) ORDER BY time DESC LIMIT 50;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "PowerShell script blocks, most unusual first; low cosine_similarity means unusual."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-win-4-powershell-unusual"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT 1009 AS class_uid, 'Script Activity' AS class_name, 1 AS category_uid, 'System Activity' AS category_name, 1 AS activity_id, 'Execute' AS activity_name, 100901 AS type_uid, 3 AS severity_id, 'Medium' AS severity, time*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', time, 'unixepoch') AS time_dt, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'powershell_events' AS \"metadata.log_name\", script_block_id AS \"metadata.uid\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", 2 AS \"script.type_id\", 'PowerShell' AS \"script.type\", script_name AS \"script.name\", script_path AS \"script.file.path\", substr(script_text, 1, 300) AS \"script.script_content\", cosine_similarity AS \"unmapped.cosine_similarity\" FROM powershell_events WHERE time > 0 AND cosine_similarity < 0.3 ORDER BY cosine_similarity LIMIT 25;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Security log: 4624 logon (Authentication), 4688 process created (Process Activity), 4720 user account created (Account Change)."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-win-5-security-logons"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT cls AS class_uid, CASE cls WHEN 3002 THEN 'Authentication' WHEN 1007 THEN 'Process Activity' ELSE 'Account Change' END AS class_name, CASE cls WHEN 1007 THEN 1 ELSE 3 END AS category_uid, CASE cls WHEN 1007 THEN 'System Activity' ELSE 'Identity & Access Management' END AS category_name, 1 AS activity_id, CASE cls WHEN 3002 THEN 'Logon' WHEN 1007 THEN 'Launch' ELSE 'Create' END AS activity_name, cls*100 + 1 AS type_uid, 1 AS severity_id, 'Informational' AS severity, time*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', time, 'unixepoch') AS time_dt, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'windows_events' AS \"metadata.log_name\", eid AS \"metadata.uid\", CAST(eventid AS TEXT) AS \"metadata.event_code\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", substr(data, 1, 400) AS raw_data FROM (SELECT *, CASE eventid WHEN 4624 THEN 3002 WHEN 4688 THEN 1007 ELSE 3001 END AS cls FROM windows_events WHERE time > 0 AND source = 'Security' AND eventid IN (4624, 4688, 4720)) ORDER BY time DESC LIMIT 25;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "NTFS renames and deletes under the monitored directories."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-win-6-ntfs-rename-delete"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT 1001 AS class_uid, 'File System Activity' AS class_name, 1 AS category_uid, 'System Activity' AS category_name, act AS activity_id, CASE act WHEN 4 THEN 'Delete' ELSE 'Rename' END AS activity_name, 100100 + act AS type_uid, 2 AS severity_id, 'Low' AS severity, time*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', time, 'unixepoch') AS time_dt, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'ntfs_journal_events' AS \"metadata.log_name\", eid AS \"metadata.uid\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", CASE WHEN old_path != '' THEN old_path ELSE path END AS \"file.path\", CASE WHEN old_path != '' THEN path END AS \"file_result.path\", action AS \"unmapped.action\", category AS \"unmapped.category\" FROM (SELECT *, CASE action WHEN 'FileDeletion' THEN 4 ELSE 5 END AS act FROM ntfs_journal_events WHERE time > 0 AND action IN ('FileRename_OldName','FileRename_NewName','FileDeletion')) ORDER BY time DESC LIMIT 25;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "NTFS activity by action (sanity: what the journal is doing at all)."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-win-7-ntfs-by-action"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT 1001 AS class_uid, 'File System Activity' AS class_name, 1 AS category_uid, 'System Activity' AS category_name, act AS activity_id, CASE act WHEN 1 THEN 'Create' WHEN 3 THEN 'Update' WHEN 4 THEN 'Delete' WHEN 5 THEN 'Rename' WHEN 6 THEN 'Set Attributes' ELSE 'Other' END AS activity_name, 100100 + act AS type_uid, 1 AS severity_id, 'Informational' AS severity, max(time)*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', max(time), 'unixepoch') AS time_dt, min(time)*1000 AS start_time, max(time)*1000 AS end_time, count(*) AS count, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'ntfs_journal_events' AS \"metadata.log_name\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", action AS \"unmapped.action\" FROM (SELECT *, CASE action WHEN 'FileCreation' THEN 1 WHEN 'DirectoryCreation' THEN 1 WHEN 'FileWrite' THEN 3 WHEN 'FileOverwrite' THEN 3 WHEN 'FileTruncation' THEN 3 WHEN 'FileDeletion' THEN 4 WHEN 'DirectoryDeletion' THEN 4 WHEN 'FileRename_OldName' THEN 5 WHEN 'FileRename_NewName' THEN 5 WHEN 'DirectoryRename_OldName' THEN 5 WHEN 'DirectoryRename_NewName' THEN 5 WHEN 'AttributesChange' THEN 6 ELSE 99 END AS act FROM ntfs_journal_events WHERE time > 0) GROUP BY action ORDER BY count DESC;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Browser history pointing at executables and scripts. Chrome timestamps are microseconds since 1601-01-01."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-win-8-browser-history-executables"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT 4002 AS class_uid, 'HTTP Activity' AS class_name, 4 AS category_uid, 'Network Activity' AS category_name, 3 AS activity_id, 'Get' AS activity_name, 400203 AS type_uid, 2 AS severity_id, 'Low' AS severity, (last_visit_time/1000000 - 11644473600)*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', last_visit_time/1000000 - 11644473600, 'unixepoch') AS time_dt, visit_count AS count, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'chrome_url_history' AS \"metadata.log_name\", id AS \"metadata.uid\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", 'GET' AS \"http_request.http_method\", url AS \"http_request.url.url_string\", title AS \"unmapped.title\" FROM chrome_url_history WHERE url LIKE '%.exe%' OR url LIKE '%.scr%' OR url LIKE '%.vbs%' OR url LIKE '%.js%' OR url LIKE '%.bat%' OR url LIKE '%.php?%' ORDER BY last_visit_time DESC LIMIT 25;"
+
+---
+apiVersion: v1
+kind: report
+spec:
+  automations_enabled: false
+  description: "Most recent downloads from the Chrome/Edge downloads table."
+  discard_data: false
+  fleet: ""
+  interval: 0
+  logging: snapshot
+  min_osquery_version: ""
+  name: "detect-win-9-recent-downloads"
+  observer_can_run: false
+  platform: "windows"
+  query: "SELECT 1001 AS class_uid, 'File System Activity' AS class_name, 1 AS category_uid, 'System Activity' AS category_name, 1 AS activity_id, 'Create' AS activity_name, 100101 AS type_uid, 1 AS severity_id, 'Informational' AS severity, CAST(strftime('%s','now') AS INTEGER)*1000 AS time, strftime('%Y-%m-%dT%H:%M:%SZ', 'now') AS time_dt, '1.4.0' AS \"metadata.version\", 'osquery' AS \"metadata.product.name\", 'Fleet' AS \"metadata.product.vendor_name\", 'chrome_download_history' AS \"metadata.log_name\", id AS \"metadata.uid\", (SELECT hostname FROM system_info) AS \"device.hostname\", (SELECT uuid FROM system_info) AS \"device.uid\", target_path AS \"file.path\", current_path AS \"unmapped.current_path\" FROM chrome_download_history ORDER BY id DESC LIMIT 25;"

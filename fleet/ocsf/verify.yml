@@ -1,4 +1,4 @@
-# OCF reports for verify.sql. Import: fleetctl apply -f fleet/ocf/verify.yml
+# Fleet report specs for verify.sql. Import: fleetctl apply -f fleet/ocsf/verify.yml
 apiVersion: v1
 kind: report
 spec:
@@ -107,7 +107,7 @@ spec:
   min_osquery_version: ""
   name: "verify-5-fim-feed"
   observer_can_run: false
-  platform: ""
+  platform: "darwin,linux"
   query: "SELECT datetime(time,'unixepoch') AS t, target_path, category, action FROM file_events WHERE action IN ('CREATED','UPDATED') ORDER BY time DESC LIMIT 50;"
 
 ---
@@ -156,7 +156,7 @@ spec:
   name: "verify-8-browser-atc"
   observer_can_run: false
   platform: "windows"
-  query: "SELECT (SELECT count(*) FROM chrome_url_history)      AS chrome_history, (SELECT count(*) FROM edge_url_history)        AS edge_history, (SELECT count(*) FROM chrome_download_history) AS chrome_downloads, (SELECT count(*) FROM firefox_url_history)     AS firefox_history;"
+  query: "SELECT (SELECT count(*) FROM chrome_url_history) AS chrome_history, (SELECT count(*) FROM edge_url_history) AS edge_history, (SELECT count(*) FROM chrome_download_history) AS chrome_downloads, (SELECT count(*) FROM firefox_url_history) AS firefox_history;"
 
 ---
 apiVersion: v1
@@ -172,7 +172,7 @@ spec:
   name: "verify-9-powershell-dedup"
   observer_can_run: false
   platform: "windows"
-  query: "SELECT (SELECT count(*) FROM windows_events WHERE eventid = 4104) AS in_windows_events, (SELECT count(*) FROM powershell_events)                   AS in_powershell_events;"
+  query: "SELECT (SELECT count(*) FROM windows_events WHERE eventid = 4104) AS in_windows_events, (SELECT count(*) FROM powershell_events) AS in_powershell_events;"
 
 ---
 apiVersion: v1

@@ -1,4 +1,4 @@
-# OCF reports for test-pack.sql. Import: fleetctl apply -f fleet/ocf/test-pack.yml
+# Fleet report specs for test-pack.sql. Import: fleetctl apply -f fleet/ocsf/test-pack.yml
 apiVersion: v1
 kind: report
 spec:
@@ -76,7 +76,7 @@ spec:
   name: "test-1-1-macos-evented-counts"
   observer_can_run: false
   platform: "darwin"
-  query: "SELECT 'es_process_events'      AS tbl, count(*) AS n FROM es_process_events WHERE time > 0 UNION ALL SELECT 'es_process_file_events', count(*) FROM es_process_file_events WHERE time > 0 UNION ALL SELECT 'file_events',            count(*) FROM file_events WHERE time > 0 UNION ALL SELECT 'yara_events',            count(*) FROM yara_events WHERE time > 0;"
+  query: "SELECT 'es_process_events' AS tbl, count(*) AS n FROM es_process_events WHERE time > 0 UNION ALL SELECT 'es_process_file_events', count(*) FROM es_process_file_events WHERE time > 0 UNION ALL SELECT 'file_events', count(*) FROM file_events WHERE time > 0 UNION ALL SELECT 'yara_events', count(*) FROM yara_events WHERE time > 0;"
 
 ---
 apiVersion: v1
@@ -140,7 +140,7 @@ spec:
   name: "test-1-5-linux-evented-counts"
   observer_can_run: false
   platform: "linux"
-  query: "SELECT 'file_events'        AS tbl, count(*) AS n FROM file_events WHERE time > 0 UNION ALL SELECT 'process_events',      count(*) FROM process_events WHERE time > 0 UNION ALL SELECT 'socket_events',       count(*) FROM socket_events WHERE time > 0 UNION ALL SELECT 'user_events',         count(*) FROM user_events WHERE time > 0 UNION ALL SELECT 'process_file_events', count(*) FROM process_file_events WHERE time > 0;"
+  query: "SELECT 'file_events' AS tbl, count(*) AS n FROM file_events WHERE time > 0 UNION ALL SELECT 'process_events', count(*) FROM process_events WHERE time > 0 UNION ALL SELECT 'socket_events', count(*) FROM socket_events WHERE time > 0 UNION ALL SELECT 'user_events', count(*) FROM user_events WHERE time > 0 UNION ALL SELECT 'process_file_events', count(*) FROM process_file_events WHERE time > 0;"
 
 ---
 apiVersion: v1
@@ -188,7 +188,7 @@ spec:
   name: "test-1-8-windows-evented-counts"
   observer_can_run: false
   platform: "windows"
-  query: "SELECT 'ntfs_journal_events' AS tbl, count(*) AS n FROM ntfs_journal_events WHERE time > 0 UNION ALL SELECT 'windows_events',     count(*) FROM windows_events WHERE time > 0 UNION ALL SELECT 'powershell_events',  count(*) FROM powershell_events WHERE time > 0 UNION ALL SELECT 'process_etw_events', count(*) FROM process_etw_events WHERE time > 0 UNION ALL SELECT 'dns_lookup_events',  count(*) FROM dns_lookup_events WHERE time > 0;"
+  query: "SELECT 'ntfs_journal_events' AS tbl, count(*) AS n FROM ntfs_journal_events WHERE time > 0 UNION ALL SELECT 'windows_events', count(*) FROM windows_events WHERE time > 0 UNION ALL SELECT 'powershell_events', count(*) FROM powershell_events WHERE time > 0 UNION ALL SELECT 'process_etw_events', count(*) FROM process_etw_events WHERE time > 0 UNION ALL SELECT 'dns_lookup_events', count(*) FROM dns_lookup_events WHERE time > 0;"
 
 ---
 apiVersion: v1
@@ -252,7 +252,7 @@ spec:
   name: "test-1-12-powershell-dedup"
   observer_can_run: false
   platform: "windows"
-  query: "SELECT (SELECT count(*) FROM windows_events WHERE time > 0 AND eventid = 4104) AS in_windows_events, (SELECT count(*) FROM powershell_events WHERE time > 0)    AS in_powershell_events;"
+  query: "SELECT (SELECT count(*) FROM windows_events WHERE time > 0 AND eventid = 4104) AS in_windows_events, (SELECT count(*) FROM powershell_events WHERE time > 0) AS in_powershell_events;"
 
 ---
 apiVersion: v1
@@ -316,7 +316,7 @@ spec:
   name: "test-2-1-macos-atc-counts"
   observer_can_run: false
   platform: "darwin"
-  query: "SELECT 'quarantine_items'        AS tbl, count(*) AS n FROM quarantine_items UNION ALL SELECT 'chrome_url_history',      count(*) FROM chrome_url_history UNION ALL SELECT 'chrome_download_history', count(*) FROM chrome_download_history UNION ALL SELECT 'firefox_url_history',     count(*) FROM firefox_url_history;"
+  query: "SELECT 'quarantine_items' AS tbl, count(*) AS n FROM quarantine_items UNION ALL SELECT 'chrome_url_history', count(*) FROM chrome_url_history UNION ALL SELECT 'chrome_download_history', count(*) FROM chrome_download_history UNION ALL SELECT 'firefox_url_history', count(*) FROM firefox_url_history;"
 
 ---
 apiVersion: v1
@@ -332,7 +332,7 @@ spec:
   name: "test-2-2-windows-atc-counts"
   observer_can_run: false
   platform: "windows"
-  query: "SELECT 'chrome_url_history'      AS tbl, count(*) AS n FROM chrome_url_history UNION ALL SELECT 'edge_url_history',        count(*) FROM edge_url_history UNION ALL SELECT 'chrome_download_history', count(*) FROM chrome_download_history UNION ALL SELECT 'firefox_url_history',     count(*) FROM firefox_url_history;"
+  query: "SELECT 'chrome_url_history' AS tbl, count(*) AS n FROM chrome_url_history UNION ALL SELECT 'edge_url_history', count(*) FROM edge_url_history UNION ALL SELECT 'chrome_download_history', count(*) FROM chrome_download_history UNION ALL SELECT 'firefox_url_history', count(*) FROM firefox_url_history;"
 
 ---
 apiVersion: v1
@@ -507,7 +507,7 @@ spec:
   min_osquery_version: ""
   name: "test-3-6-fim-feed-scan"
   observer_can_run: false
-  platform: ""
+  platform: "darwin,linux"
   query: "SELECT datetime(time,'unixepoch') AS t, target_path, category, action, size, sha256 FROM file_events WHERE time > 0 AND action IN ('CREATED','UPDATED') AND size > 0 ORDER BY time DESC LIMIT 50;"
 
 ---
@@ -540,4 +540,4 @@ spec:
   name: "test-4-bpf-canary"
   observer_can_run: false
   platform: "linux"
-  query: "SELECT (SELECT version FROM osquery_info)                                          AS osquery_version, (SELECT count(*) FROM osquery_flags WHERE name='enable_bpf_events')         AS bpf_flag_exists, (SELECT count(*) FROM osquery_registry WHERE registry='table' AND name='bpf_process_events')                    AS bpf_table_exists, (SELECT count(*) FROM osquery_flags WHERE name='disable_audit' AND value='false')                            AS audit_enabled;"
+  query: "SELECT (SELECT version FROM osquery_info) AS osquery_version, (SELECT count(*) FROM osquery_flags WHERE name='enable_bpf_events') AS bpf_flag_exists, (SELECT count(*) FROM osquery_registry WHERE registry='table' AND name='bpf_process_events') AS bpf_table_exists, (SELECT count(*) FROM osquery_flags WHERE name='disable_audit' AND value='false') AS audit_enabled;"
