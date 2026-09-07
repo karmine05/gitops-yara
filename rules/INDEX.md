@@ -1,6 +1,6 @@
 # Rule index
 
-Builds rules from `https://github.com/elastic/protections-artifacts.git` @ `9c334cf8298d` and `https://github.com/magicsword-io/LOLDrivers.git` @ `2ad986b10a5f`, 2026-08-31.
+Builds rules from `https://github.com/elastic/protections-artifacts.git` @ `da027f6cc36c` and `https://github.com/magicsword-io/LOLDrivers.git` @ `2ad986b10a5f`, 2026-09-07.
 
 Pass any `sigurl` below to `yara_file` or `yara_process`. One allowlist
 entry in agent options covers this whole tree.
@@ -44,7 +44,7 @@ entry in agent options covers this whole tree.
 
 | File | Rules | Size | sigurl |
 |---|---:|---:|---|
-| `windows/_all.yar` | 2024 | 2484 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/_all.yar` |
+| `windows/_all.yar` | 2028 | 2488 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/_all.yar` |
 | `windows/attacksimulation.yar` | 1 | 1 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/attacksimulation.yar` |
 | `windows/backdoor.yar` | 4 | 5 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/backdoor.yar` |
 | `windows/clickfraud.yar` | 1 | 1 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/clickfraud.yar` |
@@ -61,7 +61,7 @@ entry in agent options covers this whole tree.
 | `windows/remoteadmin.yar` | 1 | 1 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/remoteadmin.yar` |
 | `windows/rootkit.yar` | 100 | 136 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/rootkit.yar` |
 | `windows/shellcode.yar` | 6 | 5 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/shellcode.yar` |
-| `windows/trojan.yar` | 509 | 526 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/trojan.yar` |
+| `windows/trojan.yar` | 513 | 530 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/trojan.yar` |
 | `windows/virus.yar` | 3 | 3 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/virus.yar` |
 | `windows/vulndriver.yar` | 833 | 1288 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/vulndriver.yar` |
 | `windows/wiper.yar` | 4 | 4 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/wiper.yar` |

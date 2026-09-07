@@ -4,8 +4,8 @@
  *
  * sigurl:    https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/linux/shellcode.yar
  * Source:    https://github.com/elastic/protections-artifacts.git
- * Commit:    9c334cf8298d9ff7e19c2a50817669072abc2d66
- * Generated: 2026-08-31
+ * Commit:    da027f6cc36c20ce0a4e77b01b5f43415cc9791f
+ * Generated: 2026-09-07
  * Rules:     8   Upstream files: 1
  *
  * Upstream rules are licensed under the Elastic License 2.0.
