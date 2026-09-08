@@ -69,7 +69,18 @@ Reading it:
 - `PUB.events = 0` with `active = 1` on a publisher means it is running and has
   seen nothing since expiry, not that it is broken.
 - `SYSMON.*` present → **stop planning around Security-channel event ids and go
-  to the S-bundles.** `SYSMON.SVC` gives the service and its binary,
+  to the S-bundles.** The service is named `Sysmon` **or** `Sysmon64` — the name
+  reflects the installer's architecture, not the version, so match both.
+  `SysmonDrv\Parameters` carries `ConfigFile`, `ConfigHash`, `ArchiveDirectory`,
+  `Options`, `HashingAlgorithm`, `CheckRevocation`, `DnsLookup` and `Rules`.
+  **`ConfigHash` is a one-query config-drift check across the whole estate** —
+  hosts whose hash differs are running different coverage, and a lab or estate
+  usually has one or two odd ones out. `ConfigFile` may be a relative path
+  (`.\sysmonconfig.xml`), which tells you nothing about where the file now is.
+  `HashingAlgorithm` of `-2147483633` (0x8000000F) means all four algorithms,
+  so `Hashes` will carry IMPHASH. **`DnsLookup = 00` disables reverse DNS**, so
+  event 3's `DestinationHostname` comes back empty — read that value before
+  promising yourself hostnames in S-NET. `SYSMON.SVC` gives the service and its binary,
   `SYSMON.DRV` the filter driver (absent driver with present service = Sysmon is
   installed but not collecting), `SYSMON.CFG.mtime` is when the config was last
   written — a config write inside the incident window is itself a finding
@@ -503,10 +514,55 @@ Run the profile probe first — one query, and it is the Sysmon equivalent of th
 SELECT 'SYSMON.PROFILE' AS sig, 'T1562.001' AS attck, eventid, count(*) AS n FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid IN (1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,25,255) AND timestamp = '86400000' GROUP BY eventid;
 ```
 
-An event id with `n = 0` is excluded by config (or genuinely did not happen) —
-absence there proves nothing, and you must say so rather than reporting "no
-injection observed". Ids present with healthy counts are the ones you can hunt
-and the ones whose absence is meaningful.
+An event id with `n = 0` is excluded by config **or** genuinely did not happen.
+Absence there proves nothing on its own, and you must say so rather than
+reporting "no injection observed". Two zeros are **provable exclusions**, because
+the paired id makes them arithmetically impossible:
+
+| Zero id | Paired id non-zero | Conclusion |
+|---|---|---|
+| 5 ProcessTerminate | 1 ProcessCreate | processes were created, so they terminated — the config drops 5 |
+| 18 PipeConnected | 17 PipeCreated | pipes were created, so they were connected — the config drops 18 |
+| 2 FileCreateTime or 11 FileCreate | 23 FileDelete | files were deleted, so they existed |
+
+Everything else (6, 8, 9, 14, 15, 19–21, 23) is genuinely ambiguous from this
+probe. Say "ambiguous — id absent, config coverage unknown", never "did not
+occur".
+
+**A non-zero count is not coverage — check the ratio.** Verified live: a domain
+controller emitted `1` ProcessTerminate against `187` ProcessCreate in the same
+24 h. Event 5 is not excluded there, it is scoped by a narrow *include* rule, and
+a naive "non-zero means covered" read would trust a feed that sees one event in
+two hundred. Sanity ratios: 5 should roughly track 1; 18 should track 17; 13 and
+12 should be the same order of magnitude on a workstation. An id that is
+non-zero but two or more orders of magnitude below its pair is **effectively
+excluded** — treat it as ambiguous and say so.
+
+**Two hosts on different `ConfigHash` values have different hunt capabilities.**
+Verified live in one small estate: the config on three hosts emitted 5,225
+event-12 records in 24 h while a fourth host, on a different `ConfigHash`,
+emitted **zero** event 12 and 2,795 event 13. Registry-key creation was simply
+not collected there. Run `S-PROFILE` per host rather than assuming the estate is
+uniform, and group hosts by `ConfigHash` from B0 before generalising any finding
+across them.
+
+Two coverage gaps to check for explicitly, because the routing in `SKILL.md` §8
+leans on them:
+
+- **event 15 (`FileCreateStreamHash`) at zero** removes the mark-of-the-web
+  origin from the phishing route. Fall back to B5 browser history and
+  `FILE.RECENT`.
+- **event 23 (`FileDelete`) at zero while `ArchiveDirectory` is set** means
+  archiving is configured but the config's rules match nothing — the deleted-file
+  hash pivot is unavailable. Fall back to `EXEC.SHIMCACHE` and `EXEC.PREFETCH`,
+  which survive the file itself.
+
+**Sysmon channel retention is shorter than you expect on a noisy host.** The
+default `maxsize` puts the EVTX at ~64 MiB (`67112960` bytes in B0's `EVTX` row);
+a workstation emitting 26k `FileCreate` and 12k `ImageLoad` events per day fills
+and wraps that in a day or two. Bracket Sysmon retention with `time_range` the
+same way you bracket Security (B0), and never assume the channel reaches back as
+far as the Security channel does.
 
 ### S-PROC — process creation with full context (T1059, T1036.003, T1218.*)
 
@@ -521,6 +577,12 @@ SELECT 'SYSMON.PROC' AS sig, 'T1059' AS attck, datetime, json_extract(data,'$.Ev
   Sysmon gives you** (see `pivot-and-osint.md` §1).
 - Build the tree from `ProcessGuid` / `ParentProcessGuid`, never from pid — pids
   are reused and an attacker's short-lived process will collide.
+- **Sysmon writes a literal `-` for a field it could not resolve**, and
+  `ParentImage` / `ParentCommandLine` / `ParentProcessGuid` are the common
+  casualties (verified live: `WmiPrvSE.exe` rows come back with
+  `ParentImage = "-"`). Treat `-` as null. Never report a parent process named
+  `-`, and never conclude "no parent" from it — fall back to `processes.parent`
+  from `EXEC.LIVE`, or to the surrounding event-1 rows ordered by `datetime`.
 - `IntegrityLevel` of `High`/`System` from a parent running as `Medium` is an
   elevation to explain (T1548.002).
 - Same client-side pattern list as `E-PROC`; the pushdown has already cut the set.
@@ -534,6 +596,11 @@ SELECT 'SYSMON.NET' AS sig, 'T1071.001' AS attck, datetime, json_extract(data,'$
 ```sql
 SELECT 'SYSMON.DNS' AS sig, 'T1071.004' AS attck, datetime, json_extract(data,'$.EventData.QueryName') AS query, json_extract(data,'$.EventData.QueryStatus') AS status, substr(json_extract(data,'$.EventData.QueryResults'),1,300) AS results, json_extract(data,'$.EventData.Image') AS image FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid = 22 AND timestamp = '86400000' LIMIT 500;
 ```
+
+`DestinationHostname` and `SourceHostname` are populated only when the config
+leaves reverse DNS on. B0's `SYSMON.CFG` row shows `DnsLookup`; `00` means both
+come back empty and you resolve the IP yourself (B4 `NET.DNSCACHE`, S-DNS event
+22, or OSINT). Do not report an empty `DestinationHostname` as "unresolvable".
 
 Event 3 answers what `NET.CONN` cannot: the connection that has already closed,
 with the process that made it. Event 22 is the only durable process-to-domain
