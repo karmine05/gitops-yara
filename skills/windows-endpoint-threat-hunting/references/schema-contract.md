@@ -334,6 +334,32 @@ The Windows set on this fleet is exactly four tables:
 - A failed compile and a clean scan look identical. Prove the rule file works by
   scanning a known-hit path (an EICAR drop) before reporting "clean".
 
+## 9a. Confirmed live (lab, Fleet 4.90.2, osquery on Windows 10/11/Server 2022)
+
+Verified by execution rather than by reading source, so these are facts and not
+inferences:
+
+- `registry` with a full hive name returns rows:
+  `key = 'HKEY_LOCAL_MACHINE\System\CurrentControlSet\Services\SysmonDrv\Parameters'`
+  yields the eight expected values. The full-hive-name requirement in §2 is real
+  and the short forms are what fail.
+- `windows_eventlog` with `channel` + `eventid` + `timestamp` pushdown returns
+  in one fire against a 64 MiB Sysmon channel, and `GROUP BY eventid` over it
+  works. The same query against two domain controllers did **not** return inside
+  140 s — the retry ladder is for hosts, not for queries.
+- `json_extract(data,'$.EventData.<Field>')` resolves on `windows_eventlog`
+  rows: `Image`, `CommandLine`, `ParentImage`, `User`, `IntegrityLevel`,
+  `OriginalFileName`, `Hashes`, `ProcessGuid` all populate.
+- `datetime` is ISO 8601 UTC with a 7-digit fraction:
+  `2026-09-08T20:28:07.1257601Z`. Text sort is chronological.
+- `EvtQuery`'s reverse direction is real: `LIMIT 3` returns the three **newest**
+  matching events, with no `ORDER BY`.
+- Sysmon `Hashes` with `HashingAlgorithm = -2147483633` returns
+  `SHA1=…,MD5=…,SHA256=…,IMPHASH=…` in one string.
+- Sysmon writes a literal `-` for unresolved fields (`ParentImage = "-"`).
+- `fleetctl query` is deprecated on 4.90.2 in favour of `fleetctl report`, and a
+  4.87.0 client warns on version mismatch but works.
+
 ## 10. Path and glob behaviour
 
 - Windows paths in SQL take single backslashes: `'C:\Windows\Temp\'`. In YAML

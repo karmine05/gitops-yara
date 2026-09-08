@@ -129,6 +129,19 @@ against **different hosts** are one fan-out call, not several.
 returns the resolved target set with the results — check that a host actually
 answered before reading a `0` as a fact.
 
+**Verify *which* hosts answered, not just how many.** Label-based targeting has
+been observed to validate the label name and then ignore it for host selection:
+a query aimed at a five-host manual label executed against 23 hosts, including
+every Linux host in the estate (which returned `no such table: registry`).
+Reproduced with a built-in platform label too. So:
+
+- Prefer explicit `host_ids` (or `hostnames`) whenever you know them.
+- When you must scope by `label` / `platform` / `fleet`, resolve the intended set
+  with `TARGET.RESOLVE` **first**, then compare the answering host list against
+  it and say in the report if they differ.
+- A host that answers with a `no such table` error is telling you it is the wrong
+  platform, not that the table is missing on the platform you meant to query.
+
 ## 6. Time-window law
 
 | Window | Value | Applies to |
