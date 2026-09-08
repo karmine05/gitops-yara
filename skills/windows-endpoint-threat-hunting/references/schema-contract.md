@@ -357,8 +357,11 @@ inferences:
 - Sysmon `Hashes` with `HashingAlgorithm = -2147483633` returns
   `SHA1=…,MD5=…,SHA256=…,IMPHASH=…` in one string.
 - Sysmon writes a literal `-` for unresolved fields (`ParentImage = "-"`).
-- `fleetctl query` is deprecated on 4.90.2 in favour of `fleetctl report`, and a
-  4.87.0 client warns on version mismatch but works.
+- The observations above were captured through a direct CLI session because the
+  Fleet MCP was not reachable at the time. They are osquery/agent-side
+  behaviours and hold identically through `QUERY.RUN` — the transport does not
+  change what a table returns. Nothing in this skill requires a CLI: every
+  capability in SKILL.md §2 is an MCP tool.
 
 ## 10. Path and glob behaviour
 
