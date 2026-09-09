@@ -246,9 +246,46 @@ Use a scalar type for a bare IOC and an object-reference type only when you are
 also emitting the object.
 
 Put every IOC in `observables[]`. This is the array a SOAR platform reads for
-blocking, and the one the IOC table in §8 is generated from.
+blocking, and the one the IOC table in §9 is generated from.
 
-## 7. Verdict wrapper (always first in the report)
+## 7. Report skeleton — TL;DR opens, verdict closes
+
+Fixed order, from SKILL.md §11. The reader may stop after line 3 and must still
+know what to do; they may skip to the end and must still know what happened.
+
+```
+**Verdict:** compromised — high
+**Do now:** isolate WKSTN-4821; sweep sha256 9f2b… fleet-wide (B8, platform='windows')
+**Because:** unsigned C:\ProgramData\svchost.exe runs as auto-start service UpdateSvcHost; prefetch 13:58:04Z, 12 min before the alert
+
+## Next actions
+1. Isolate WKSTN-4821 (EDR contain) — SOC on-call
+2. B8 hash sweep for 9f2b… across platform='windows' — hunter, 1 query
+3. Reset jsmith credentials; review 10.4.2.19 in VPN logs — IAM / network
+4. B9 on WKSTN-4821 once the queue is idle — hunter, 1 query
+5. Pull C:\ProgramData\svchost.exe for detonation — DFIR
+
+## Timeline
+<≤ 5 rows, §9 format; remainder in appendix A>
+
+## Findings
+<top 5, one line + Detection Finding record each (§4); remainder in appendix B>
+
+## IOC table
+<§9 format>
+
+## Residual risk
+<≤ 5 rows, cause named, §9 categories>
+
+## Verdict
+<the §8 wrapper, evidence_used as bundle → table → value>
+```
+
+Three lines in the TL;DR, no fourth. Lists stop at five; overflow goes to an
+appendix, not to a sixth bullet. Every timestamp UTC. No hedging words —
+`missing_information` is where uncertainty lives.
+
+## 8. Verdict wrapper (closes the report)
 
 ```json
 {
@@ -276,7 +313,7 @@ blocking, and the one the IOC table in §8 is generated from.
 one finding is weak, say so per finding rather than downgrading the whole
 verdict.
 
-## 8. Timeline, IOC table, residual risk
+## 9. Timeline, IOC table, residual risk
 
 **Timeline** — UTC, ascending, boot as row zero, one line each, source named:
 
@@ -303,5 +340,7 @@ subcategory; expired evented buffer; table absent on the agent; host saturated
 or offline; capability missing from the harness; scope not swept. A gap with no
 stated cause is not a residual risk, it is an unfinished hunt.
 
-**Next actions**, ranked, each naming the one query or containment step it
-needs. "Investigate further" is not a next action.
+**Next actions**, ranked, ≤ 5, each naming the one query or containment step
+it needs and who runs it. In the skeleton (§7) they sit directly under the
+TL;DR, not at the end — the reader acts before they read. "Investigate further"
+is not a next action.
