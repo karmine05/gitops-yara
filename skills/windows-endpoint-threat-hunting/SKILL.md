@@ -109,6 +109,15 @@ up in EDR telemetry. Treat every fired query as an operational cost.
    `QUERY.RUN`); drop every `JOIN` and correlate `pid`/`path` client-side; hold
    EVTX windows at 12 h; cap `LIMIT` at 200. Round trips go up; timeouts and
    lost hunts go down. Thresholds are heuristics — tune them to the estate.
+11. **One live query per host at a time.** Never have two `QUERY.RUN` calls in
+   flight against the same host — not in one parallel tool batch, not as an
+   eager retry while the first is still pending. osquery serves live queries
+   from one worker; a second heavy query queues behind the first, both time
+   out, and the host reads as dead. Wait for the result or the timeout, then
+   fire the next. A fleet sweep is a live query on **every** host it targets,
+   including the one under investigation: run sweeps only when that host's
+   queue is idle, one sweep at a time, or exclude the host with explicit
+   `host_ids`. `HOST.*` reads are cached server lookups and do not count.
 
 ## 4. The fast path (single host)
 
@@ -128,9 +137,9 @@ Calls 1 and 2 are unconditional. Calls 3–6 are the spine. Skip a spine call on
 when B0 proves its data source is unavailable, and record that as residual risk.
 
 Parallelism: `HOST.*` reads are cached Fleet lookups — issue them alongside the
-live queries. Live queries against the **same host** go one at a time: a
-saturated osquery worker queue makes even `os_version` time out. Live queries
-against **different hosts** are one fan-out call, not several.
+live queries. Live queries against the **same host** go strictly one at a time
+(§3 rule 11): a saturated osquery worker queue makes even `os_version` time out.
+Live queries against **different hosts** are one fan-out call, not several.
 
 ## 5. Retry ladder (per live query)
 
@@ -259,9 +268,11 @@ Trigger without being asked, in this order, and stop at the first that answers:
 2. **Sweep local.** Second-order artifacts on the same host that the first
    finding implies (a dropper implies a download source; a service implies its
    binary's signature and prefetch entry).
-3. **Sweep fleet.** One `QUERY.RUN` with `platform='windows'` per IOC family.
-   Hash and path sweeps are cheap; parent-child and cmdline sweeps are not.
-   Scope with `fleet` / `label` when the fleet is large.
+3. **Sweep fleet.** One `QUERY.RUN` with `platform='windows'` per IOC family,
+   one sweep at a time, and only once the investigated host's own queue is idle
+   (§3 rule 11 — the sweep lands on that host too). Hash and path sweeps are
+   cheap; parent-child and cmdline sweeps are not. Scope with `fleet` / `label`
+   when the fleet is large.
 4. **Enrich internal.** `KB.SEARCH` before any web call — prior hunts, the local
    YARA corpus, asset ownership, known-good baselines.
 5. **Enrich external.** `WEB.SEARCH` / `WEB.FETCH` for hash reputation, malware
@@ -299,24 +310,41 @@ what would settle it" is a valid deliverable.
 
 ## 11. Report contract
 
-Order is fixed. Details and templates in `references/reporting.md`.
+Written for a reader who is under pressure and may read only the first and the
+last line. Shape follows the `i-have-adhd` output style, embedded here so the
+skill does not depend on it: lead with the action, number the steps, cap every
+list at five, no preamble, no recap, close with what happened. Order is fixed.
+Skeleton and templates in `references/reporting.md` §7–§9.
 
-1. **Verdict**, plain terms, first:
-   `{supported, answer, confidence, evidence_used[], missing_information[]}`.
-   `confidence` ∈ `high|medium|low`, justified by which sources answered — not a
-   vibe.
-2. **Timeline**, one line per event, UTC, monotonic, boot time as row zero.
-3. **OCSF findings**, one record per finding, `class_uid` from the `sig` mapping
-   table, ATT&CK in `finding_info.attacks[]`.
-4. **IOC table**, machine-readable, ready to hand to a blocklist or a sweep.
-5. **Residual risk**: every gap, with its cause — cleared channel, expired
-   buffer, disabled table, saturated host, missing capability, retention shorter
-   than the incident window.
-6. **Next actions**, ranked, each naming the one query or containment step it
-   needs.
+1. **TL;DR** — exactly three lines, nothing above them:
+   `Verdict:` compromised / not compromised / undetermined, plus confidence.
+   `Do now:` the single next action — contain, sweep, or the one query that
+   settles it.
+   `Because:` the one artefact that carries the verdict, with its source.
+2. **Next actions** — numbered, ranked, ≤ 5. Each names the one command, query
+   or containment step and who runs it. "Investigate further" is not an action.
+3. **Timeline** — one line per event, UTC, ascending, boot as row zero, source
+   named. ≤ 5 rows in the body; the rest in an appendix.
+4. **Findings** — one OCSF Detection Finding per finding, `class_uid` from the
+   `sig` map, ATT&CK in `finding_info.attacks[]`. One human-readable line, then
+   the record. Top 5 in the body; the rest in an appendix.
+5. **IOC table** — machine-readable, ready for a blocklist or a sweep.
+6. **Residual risk** — every gap with its cause, ≤ 5 rows. A gap with no cause
+   is an unfinished hunt, not a residual risk.
+7. **Verdict + evidence** — closes the report. The wrapper
+   `{supported, answer, confidence, evidence_used[], missing_information[]}`,
+   with `evidence_used` as `bundle → table → value` lines the reader can
+   re-run. `confidence` ∈ `high|medium|low`, justified by which sources
+   answered — not a vibe.
+
+Style: fragments allowed, hedging not. Numbers, units and timestamps exact. No
+"appears to", no "may indicate" — either the artefact exists or it is in
+`missing_information`. Gaps get cause and fix in a flat tone, no apology.
 
 Never present a bundle's raw rows as the report. Never claim a query ran that
-did not. If a step was skipped, say which and why.
+did not. If a step was skipped, say which and why. The first line and the last
+line must each stand alone: the TL;DR says what to do, the verdict says what
+happened.
 
 ## 12. References
 
@@ -329,6 +357,6 @@ Read on demand, not up front:
 - `references/hunt-bundles.md` — every pre-vetted bundle, `sig`/`attck` tagged,
   with cost class and split points.
 - `references/reporting.md` — OCSF class map, `type_uid` maths, record templates,
-  ATT&CK fields, verdict wrapper.
+  ATT&CK fields, TL;DR skeleton, verdict wrapper.
 - `references/pivot-and-osint.md` — IOC extraction and normalisation, fleet-sweep
   patterns, OSINT rules of engagement, exfiltration guardrails.

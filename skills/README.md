@@ -24,7 +24,7 @@ Design goals, in order: **correct on the first fire**, **fewest round trips**,
 | `SKILL.md` | operating contract — capability binding, non-negotiables, the 6–9 call fast path, retry ladder, time-window law, absence interpretation, alert-type routing, autonomy triggers, stop conditions, report contract |
 | `references/schema-contract.md` | the schema gate: Windows table inventory, required constraints, `windows_eventlog` vs `windows_events`, evented-table semantics, type traps, the MCP validator's blind spots, 11-point pre-fire checklist |
 | `references/hunt-bundles.md` | every pre-vetted query bundle (B0–B9, E-* per EVTX channel, S-* for Sysmon), `sig`/`attck` tagged in-row, with cost class and split points |
-| `references/reporting.md` | OCSF class map (core + `win` extension), `type_uid` maths, Detection Finding template, ATT&CK fields, observable types, verdict wrapper |
+| `references/reporting.md` | OCSF class map (core + `win` extension), `type_uid` maths, Detection Finding template, ATT&CK fields, observable types, TL;DR-first report skeleton, verdict wrapper |
 | `references/pivot-and-osint.md` | IOC extraction and normalisation, the sweep ladder, OSINT rules of engagement and exfiltration guardrails |
 
 ### Why it is fast
@@ -45,7 +45,12 @@ Design goals, in order: **correct on the first fire**, **fewest round trips**,
   known.
 - **Sized to the host.** B0 reads cores, RAM and EVTX sizes first. A constrained
   host gets single-table branches instead of `UNION ALL` bundles, no `JOIN`s,
-  and tight windows — fewer timeouts beats fewer round trips.
+  and tight windows — fewer timeouts beats fewer round trips. One live query per
+  host at a time, always; a fleet sweep counts as a query on every host it hits.
+- **Report you can act on from line one.** Three-line TL;DR (verdict, do now,
+  because), ranked next actions, then timeline, findings, IOCs, residual risk,
+  and the verdict wrapper with re-runnable evidence at the end. Lists cap at
+  five; overflow goes to appendices.
 
 ### Verified facts behind the rewrite
 
