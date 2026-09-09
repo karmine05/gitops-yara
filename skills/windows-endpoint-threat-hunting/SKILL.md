@@ -10,7 +10,8 @@ web tool. No runtime-specific syntax appears below — bind the capabilities in
 §2 once and the rest of the file is portable.
 
 Optimised for **wall-clock to verdict**, not for coverage theatre. Budget: a
-single-host verdict in **6–9 tool calls**. Every extra round trip is a defect.
+single-host verdict in **6–9 tool calls** (12–15 on a constrained host, §3 rule
+10). Every extra round trip is a defect — and every timeout is two.
 
 ## 1. Scope and entry condition
 
@@ -27,8 +28,8 @@ Inputs to extract from the alert before anything else (no tool calls):
 | claimed technique / detection name | routes to bundles (§8) |
 | supplied IOCs (hash, IP, domain, path, cmdline, mutex) | seeds sweep + OSINT (§9) |
 
-Missing `W0` → default the event window to 7 days and say so in the report.
-Never block on it.
+Missing `W0` → default the event window to the last 12 h (§6) and say so in the
+report. Never block on it.
 
 ## 2. Capability binding (do this once, in-head, from the tool list)
 
@@ -59,15 +60,16 @@ up in EDR telemetry. Treat every fired query as an operational cost.
 1. **Schema gate before the first query.** One `SCHEMA.CANON` call listing every
    table you plan to touch. No query is authored from memory.
    `references/schema-contract.md` is the law; read it once per session.
-2. **Self-validate every statement** against the 9-point checklist in
+2. **Self-validate every statement** against the 11-point checklist in
    `schema-contract.md` §5 *before* handing it to `QUERY.RUN`. The MCP validator
    catches only two bug classes (wrong platform, TEXT-vs-bare-int); the other
-   seven are yours. A query that returns zero rows because of a missed required
+   nine are yours. A query that returns zero rows because of a missed required
    constraint costs the same wall clock as a correct one and lies to you.
-3. **Bundle, don't drip.** Fire pre-vetted `UNION ALL` bundles from
-   `references/hunt-bundles.md` — one round trip per hunt surface, not one per
-   table. Bundles are written to split cleanly at their `UNION ALL` seams when a
-   host is too loaded to answer the whole thing.
+3. **Bundle, don't drip — on hosts that can carry a bundle.** Fire pre-vetted
+   `UNION ALL` bundles from `references/hunt-bundles.md` — one round trip per
+   hunt surface, not one per table. Bundles are written to split cleanly at
+   their `UNION ALL` seams when a host is too loaded to answer the whole thing.
+   Rule 10 decides, per host, whether you start with the bundle or the seams.
 4. **Prefer durable state over event buffers.** `windows_eventlog` reads the real
    EVTX with server-side XPath pushdown; `windows_events` is an osquery ring
    buffer that only holds channels the agent was configured to subscribe to and
@@ -88,6 +90,25 @@ up in EDR telemetry. Treat every fired query as an operational cost.
 8. **Every finding is an OCSF record with an ATT&CK reference.** Bundles emit the
    `sig` and `attck` tags in-row, so report assembly is a lookup in
    `references/reporting.md`, not a judgement call.
+9. **Every live query is selective, bounded and column-exact.** A `WHERE` that
+   uses the table's required constraint (`schema-contract.md` §3); a time bound
+   on every event/log table (§6 — the incident window or 12 h, never
+   open-ended); a `LIMIT`; and column names copied from the `SCHEMA.CANON`
+   response, not recalled. Never `SELECT * FROM registry` (or `file`, `hash`,
+   `windows_eventlog`, any evented table) without its constraint, and never a
+   recursive walk (`key GLOB` over a hive, `path GLOB '…\**'`, config-style
+   `%%`) in a hunt. An unconstrained or recursive statement is not a slow
+   query on a small host — it is a timeout, and it takes the worker queue with
+   it.
+10. **Read the host tier from B0 before choosing bundle or branch.** B0's `HW`
+   row gives logical cores and RAM, `EVTX` gives channel sizes. A host with
+   ≤ 2 logical cores, < 4 GiB RAM, a `Security.evtx` ≥ 512 MiB, or a first-fire
+   timeout is **constrained**: osquery's single worker thread cannot serve a
+   wide `UNION ALL` or a `JOIN` over heavy event volume there. On a constrained
+   host: fire branches, not bundles (one table or one event group per
+   `QUERY.RUN`); drop every `JOIN` and correlate `pid`/`path` client-side; hold
+   EVTX windows at 12 h; cap `LIMIT` at 200. Round trips go up; timeouts and
+   lost hunts go down. Thresholds are heuristics — tune them to the estate.
 
 ## 4. The fast path (single host)
 
@@ -95,7 +116,7 @@ up in EDR telemetry. Treat every fired query as an operational cost.
 |---|---|---|---|
 | 1 | `HOST.RESOLVE` | `host_id`, platform, OS build, last-seen, labels, fleet | wrong-host error; offline host |
 | 2 | `SCHEMA.CANON` | canonical columns/types for every table in the bundles you selected | rule 1 |
-| 3 | `QUERY.RUN` **B0 PREFLIGHT** | agent table inventory, publisher flags, boot time, audit policy, AV/DG posture, EVTX file sizes | tells you which later bundles are even answerable |
+| 3 | `QUERY.RUN` **B0 PREFLIGHT** | host tier (cores/RAM), agent table inventory, publisher flags, boot time, audit policy, AV/DG posture, EVTX file sizes | tells you which later bundles are even answerable, and whether to fire them whole or branch-by-branch (§3 rule 10) |
 | 4 | `QUERY.RUN` **B1 PERSISTENCE** | services, tasks, run keys, WMI subscriptions, startup, drivers, IFEO, COM hijack | most alerts resolve here |
 | 5 | `QUERY.RUN` **B2 EXECUTION** | shimcache, prefetch, UserAssist, BAM, ETW process events, PowerShell blocks | works with 4688 off and Security cleared |
 | 6 | `QUERY.RUN` **S-bundle** (Sysmon present) or **E-bundle** | the one channel the alert implicates, `eventid IN` + `timestamp` pushdown. With Sysmon: `S-PROFILE` once, then the S-bundle for the technique | the incident-window narrative |
@@ -113,12 +134,16 @@ against **different hosts** are one fan-out call, not several.
 
 ## 5. Retry ladder (per live query)
 
+0. B0 said **constrained** (§3 rule 10) → do not fire the bundle at all. Fire
+   the branches the alert implicates, one per call, 12 h windows, no `JOIN`,
+   `LIMIT ≤ 200`. Steps 1–2 are for hosts B0 cleared.
 1. First fire. Heavy bundles on a loaded host time out on first fire more often
    than not — this is queue warm-up, not a bad query.
 2. Wait ~90 s. Re-fire the **identical** SQL. Do not edit it; editing hides
    whether the timeout was scope or queue.
 3. Still nothing → split the bundle at its `UNION ALL` seams, fire the two or
-   three branches that answer the alert's technique first.
+   three branches that answer the alert's technique first — and treat the host
+   as constrained for the rest of the hunt.
 4. Three total failures on the same SQL → that surface is dead for this hunt.
    Shrink scope (one directory, one channel, one eventid), never abandon the
    hunt, and record the gap.
@@ -146,12 +171,17 @@ Reproduced with a built-in platform label too. So:
 
 | Window | Value | Applies to |
 |---|---|---|
-| incident | `W0 - 2h` → `W0 + 6h` | the narrative reconstruction |
-| event | `min(7d, channel retention)`, ending now | every EVTX / evented-table query |
-| state | none needed | registry, services, tasks, shimcache, prefetch, BAM, UserAssist — these are current state, not events |
+| incident | `W0 - 2h` → `W0 + 6h` | the narrative reconstruction — and the **first-fire bound** on every EVTX / evented query when `W0` is known: `time_range = '<W0-2h>;<W0+6h>'` |
+| event | **12 h ending now** (`timestamp = '43200000'`) when `W0` is unknown or lies inside the last 12 h. Widen one step at a time — 24 h, then `min(7d, channel retention)` — and only after the tight window ran clean and answered nothing decisive | every EVTX / evented-table query |
+| state | none needed | registry, services, tasks, shimcache, prefetch, BAM, UserAssist — these are current state, not events. B2/B5/B6 carry a 7 d bound on durable artefacts only to cap row counts |
 
 Rules:
 
+- **12 h is the default; 7 d is the ceiling.** Every narrative E-/S-bundle in
+  `hunt-bundles.md` ships at 12 h. When `W0` is known, swap in the incident
+  `time_range` rather than widening — an 8 h absolute bracket is cheaper and
+  more precise than any lookback. On a constrained host never widen past 24 h
+  without first splitting to a single `eventid`.
 - Never fire an unbounded EVTX scan. `windows_eventlog` bounds go in
   `timestamp = '<milliseconds>'` (lookback) or
   `time_range = '<ISO8601Z>;<ISO8601Z>'` (absolute) — both push down into
@@ -260,8 +290,9 @@ Stop and report when any of these is true:
   surfaces are unavailable.
 - The next query would cost more than the answer is worth (a wide `file` GLOB or
   a large-rule YARA sweep on a saturated host).
-- 12 live queries fired on one host without a verdict → report the partial
-  picture plus a ranked list of what remains, and let the investigator choose.
+- 12 live queries fired on one host without a verdict (20 on a constrained
+  host, where branches replace bundles) → report the partial picture plus a
+  ranked list of what remains, and let the investigator choose.
 
 Do not keep hunting for symmetry. An honest "insufficient telemetry, here is
 what would settle it" is a valid deliverable.
@@ -293,7 +324,7 @@ Read on demand, not up front:
 
 - `references/schema-contract.md` — the schema gate: Windows table inventory,
   required constraints, type traps, evented-table semantics, the MCP validator's
-  blind spots, and the 9-point pre-fire checklist. **Read once per session,
+  blind spots, and the 11-point pre-fire checklist. **Read once per session,
   before the first query.**
 - `references/hunt-bundles.md` — every pre-vetted bundle, `sig`/`attck` tagged,
   with cost class and split points.

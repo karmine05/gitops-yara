@@ -118,6 +118,10 @@ table on that build, extensions and ATC included.
 | `windows_search` | `query` | Advanced Query Syntax, not SQL |
 | `curl`, `curl_certificate` | `url` / `hostname` | makes outbound requests from the device — do not use in a hunt |
 
+A `SELECT *` against any of these with none of its constraints is not a slow
+query. On a 2-core host it is a timeout that also stalls the worker queue for
+every query behind it.
+
 ## 4. `windows_eventlog` vs `windows_events` — pick correctly
 
 This is the highest-value distinction in the whole skill.
@@ -193,7 +197,7 @@ table. Retention is `events_expiry` / `events_max`, not the channel's.
   the Firewall channel — every one of those needs `windows_eventlog`. Confirm
   the live value from B0's `FLAG` rows rather than trusting this line.
 
-## 5. The 9-point pre-fire checklist
+## 5. The 11-point pre-fire checklist
 
 Run this on every statement before it leaves your hands. It is cheaper than one
 failed round trip.
@@ -217,6 +221,20 @@ failed round trip.
    bundle.
 9. **Result shape** is bounded: `LIMIT` on anything that could return thousands,
    `substr()` on `data`/`cmdline`/`script_text` instead of whole blobs.
+10. **Selective `WHERE`, named columns, no walks.** The statement names its
+    columns (no `SELECT *` outside a `SELECT * FROM (…)` wrapper) and carries a
+    `WHERE` that uses the table's §3 constraint plus a time bound on any
+    event/log table (12 h or the incident `time_range` — SKILL.md §6).
+    `SELECT * FROM registry` / `file` / `windows_eventlog` with no constraint,
+    and recursive walks (`key GLOB` over a hive, `path GLOB '…\**'`,
+    config-style `%%`), do not leave your hands.
+11. **Fits the host.** B0 `HW`/`EVTX` said constrained (SKILL.md §3 rule 10) →
+    the statement is one table or one event group, has no `JOIN`, its EVTX
+    window is ≤ 12 h, and `LIMIT ≤ 200`. On any host a `JOIN` is allowed only
+    between two already-constrained **state** tables on `pid` or `path`
+    (`listening_ports` ⋈ `processes`, `authenticode` ⋈ `hash`) — never touching
+    `windows_eventlog` or an evented table, whose row volume is what makes the
+    join fall over.
 
 Fail any point → fix the SQL, do not fire it.
 
