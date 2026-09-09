@@ -22,7 +22,7 @@ Design goals, in order: **correct on the first fire**, **fewest round trips**,
 | File | Contents |
 |---|---|
 | `SKILL.md` | operating contract — capability binding, non-negotiables, the 6–9 call fast path, retry ladder, time-window law, absence interpretation, alert-type routing, autonomy triggers, stop conditions, report contract |
-| `references/schema-contract.md` | the schema gate: Windows table inventory, required constraints, `windows_eventlog` vs `windows_events`, evented-table semantics, type traps, the MCP validator's blind spots, 9-point pre-fire checklist |
+| `references/schema-contract.md` | the schema gate: Windows table inventory, required constraints, `windows_eventlog` vs `windows_events`, evented-table semantics, type traps, the MCP validator's blind spots, 11-point pre-fire checklist |
 | `references/hunt-bundles.md` | every pre-vetted query bundle (B0–B9, E-* per EVTX channel, S-* for Sysmon), `sig`/`attck` tagged in-row, with cost class and split points |
 | `references/reporting.md` | OCSF class map (core + `win` extension), `type_uid` maths, Detection Finding template, ATT&CK fields, observable types, verdict wrapper |
 | `references/pivot-and-osint.md` | IOC extraction and normalisation, the sweep ladder, OSINT rules of engagement and exfiltration guardrails |
@@ -40,7 +40,12 @@ Design goals, in order: **correct on the first fire**, **fewest round trips**,
   here, what did it talk to" even when process auditing is off and the Security
   channel has been cleared — no waiting on telemetry that may not exist.
 - **EVTX with pushdown.** `channel` + `eventid IN` + `timestamp` become an XPath
-  filter inside `EvtQuery`, so the channel is never walked.
+  filter inside `EvtQuery`, so the channel is never walked. Bundles ship at a
+  12 h window; the incident `time_range` replaces it when the alert time is
+  known.
+- **Sized to the host.** B0 reads cores, RAM and EVTX sizes first. A constrained
+  host gets single-table branches instead of `UNION ALL` bundles, no `JOIN`s,
+  and tight windows — fewer timeouts beats fewer round trips.
 
 ### Verified facts behind the rewrite
 

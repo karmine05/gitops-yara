@@ -1,6 +1,6 @@
 # Hunt bundles — pre-vetted, tagged, splittable
 
-Every statement here satisfies the 9-point checklist in `schema-contract.md` §5:
+Every statement here satisfies the 11-point checklist in `schema-contract.md` §5:
 tables exist on Windows, required constraints are present, literals are
 type-correct, evented tables carry a `time` predicate, EVTX queries use
 pushdown, and results are bounded.
@@ -13,14 +13,30 @@ re-derivation. Every branch is independently runnable: on timeout, split at the
 **Substitute before firing:** `<USER>` with the account name, `<IP>` /
 `<SHA256>` / `<NAME>` with the IOC. Time windows are written inline as
 `strftime('%s','now') - <seconds>` (state/evented) or `timestamp = '<ms>'`
-(EVTX) — change the constant, not the shape. Windows used below: 7 d =
-`604800` / `604800000`, 24 h = `86400` / `86400000`, 1 h = `3600` /
-`3600000`.
+(EVTX) — change the constant, not the shape. Windows used below: **12 h =
+`43200` / `43200000`** — the EVTX default; every narrative E-/S-bundle ships at
+12 h, and when `W0` is known you swap in `time_range = '<W0-2h>;<W0+6h>'`
+instead of widening. 24 h = `86400` / `86400000` (count probes, the fleet
+sweep). 7 d = `604800` / `604800000` — the ceiling, used only on small durable
+state tables (B2/B5/B6) to cap rows. 1 h = `3600` / `3600000`.
 
 **Cost classes:** `cheap` = enumerations and pushdown EVTX, safe to bundle.
 `medium` = one directory of `file`, `processes` joins. `expensive` = recursive
 GLOB, `hash` over a directory, `yara_file`, `json_extract` over an unfiltered
 channel — these never ride in a bundle and never run unprompted.
+
+**`JOIN` rule.** State ⋈ state only, both sides already constrained, on `pid`
+or `path` — that is what B4, B6 and B8 do. Never join across `windows_eventlog`
+or an evented table; the event row volume is what makes a join fall over on a
+small host. On a constrained host drop the `JOIN` entirely: return the `pid` /
+`path` column and resolve it with a second `processes WHERE pid IN (…)` or
+`authenticode WHERE path IN (…)` call.
+
+**Constrained host** (SKILL.md §3 rule 10 — B0 `HW` ≤ 2 cores or < 4 GiB,
+`EVTX` `Security.evtx` ≥ 512 MiB, or any first-fire timeout): no bundles. Fire
+each `UNION ALL` branch as its own `QUERY.RUN`, EVTX at 12 h, `LIMIT ≤ 200`.
+B0 still fires first — it is the query that tells you the tier — minus `SEC`
+and `DG` if it times out.
 
 ---
 
@@ -33,6 +49,7 @@ phases and tells you which later bundles are answerable.
 SELECT 'OS' AS sig, name AS a, version AS b, build AS c, arch AS d, platform AS e FROM os_version
 UNION ALL SELECT 'BOOT', CAST(strftime('%s','now') - total_seconds AS TEXT), CAST(total_seconds AS TEXT), CAST(days AS TEXT), CAST(hours AS TEXT), '' FROM uptime
 UNION ALL SELECT 'HOST', hostname, computer_name, hardware_serial, hardware_model, hardware_vendor FROM system_info
+UNION ALL SELECT 'HW', CAST(cpu_logical_cores AS TEXT), CAST(physical_memory AS TEXT), cpu_brand, CAST(cpu_physical_cores AS TEXT), '' FROM system_info
 UNION ALL SELECT 'TBL', name, '', '', '', '' FROM osquery_registry WHERE registry = 'table' AND name IN ('windows_eventlog','windows_events','powershell_events','process_etw_events','dns_lookup_events','ntfs_journal_events','shimcache','prefetch','userassist','background_activities_moderator','appcompat_shims','shellbags','office_mru','recent_files','logon_sessions','pipes','process_open_handles','wmi_cli_event_consumers','wmi_event_filters','wmi_script_event_consumers','windows_firewall_rules','windows_security_products','deviceguard_status','authenticode','drivers','yara_file','chrome_url_history','edge_url_history','firefox_url_history','chrome_download_history')
 UNION ALL SELECT 'FLAG', name, value, '', '', '' FROM osquery_flags WHERE name IN ('enable_windows_events_publisher','enable_windows_events_subscriber','windows_event_channels','events_expiry','events_max','disable_events','disable_tables','yara_sigurl_authenticate')
 UNION ALL SELECT 'PUB', name, publisher, CAST(events AS TEXT), CAST(active AS TEXT), CAST(subscriptions AS TEXT) FROM osquery_events
@@ -54,6 +71,11 @@ respectively and are the only slow parts of this bundle.
 Reading it:
 
 - `BOOT.a` = boot epoch. Nothing in any log predates it.
+- `HW.a` = logical cores, `HW.b` = RAM in bytes. `a ≤ 2` or `b < 4294967296`
+  (4 GiB), or `EVTX` reports `Security.evtx` ≥ `536870912` (512 MiB), marks the
+  host **constrained** (SKILL.md §3 rule 10): from here on fire branches not
+  bundles, no `JOIN`, 12 h EVTX windows, `LIMIT ≤ 200`. Decide this before
+  B1, not after B1 times out.
 - `AUDIT` fields: 0 none, 1 success, 2 failure, 3 both. `audit_process_tracking = 0`
   means 4688 pattern hunting is worthless — go to B2. Legacy categories only, so
   a 0 is a hint, not proof (see SKILL.md §7).
@@ -138,6 +160,14 @@ Notes:
 
 Cost: cheap-to-medium. Registry walks are the classic first-fire timeout; keep
 this out of B1 so a retry costs one branch, not thirteen.
+
+Never `SELECT * FROM registry`, and never `key GLOB 'HKEY_LOCAL_MACHINE\Software\*'`
+or any other hive-wide walk — on a 2-core host that is a guaranteed timeout, and
+it wedges the worker queue for the queries behind it. Every branch below names
+one exact key, an `IN` list of keys, or a `LIKE` with a fixed prefix and a single
+`%` level. On a constrained host fire B1R in three slices: the four `RUN` /
+`RUN.USER` branches; `WINLOGON` + `IFEO` + `APPINIT` + `LSA.PKG`; then the
+`DEFEND.*` / `CRED.*` / `LOGONSCRIPT` / `ACCESSIBILITY` remainder.
 
 **Hive names must be full.** `HKLM` / `HKCU` short forms resolve to no hive and
 return zero rows. `HKEY_CURRENT_USER` is not queryable by the agent at all
@@ -304,7 +334,11 @@ Reading it:
 
 Cost: cheap **because** of pushdown. `eventid IN (…)` + `timestamp = '<ms>'`
 become an XPath filter inside `EvtQuery`; the channel is not walked. Never drop
-either constraint.
+either constraint. Every bundle below ships at **12 h** (`43200000`); with `W0`
+known, replace `timestamp` with `time_range = '<W0-2h>;<W0+6h>'`. Widen to 24 h,
+then 7 d, one step at a time and only when the tight window answered nothing
+decisive. On a constrained host fire one `eventid` group per call and stay at
+12 h.
 
 Selecting `substr(data,1,800)` keeps the row small; use
 `json_extract(data,'$.EventData.<Field>')` when you need one specific field out
@@ -313,11 +347,11 @@ of an already-filtered set.
 ### E-AUTH — logons, privilege, account and group change (T1078, T1136.001, T1098, T1550.002)
 
 ```sql
-SELECT 'AUTH.LOGON' AS sig, 'T1078' AS attck, eventid, datetime, json_extract(data,'$.EventData.TargetUserName') AS user, json_extract(data,'$.EventData.LogonType') AS logon_type, json_extract(data,'$.EventData.IpAddress') AS src_ip, json_extract(data,'$.EventData.ProcessName') AS proc FROM windows_eventlog WHERE channel = 'Security' AND eventid IN (4624,4625,4648,4672,4776,4771,4768,4769) AND timestamp = '604800000' LIMIT 400;
+SELECT 'AUTH.LOGON' AS sig, 'T1078' AS attck, eventid, datetime, json_extract(data,'$.EventData.TargetUserName') AS user, json_extract(data,'$.EventData.LogonType') AS logon_type, json_extract(data,'$.EventData.IpAddress') AS src_ip, json_extract(data,'$.EventData.ProcessName') AS proc FROM windows_eventlog WHERE channel = 'Security' AND eventid IN (4624,4625,4648,4672,4776,4771,4768,4769) AND timestamp = '43200000' LIMIT 400;
 ```
 
 ```sql
-SELECT 'IAM.CHANGE' AS sig, 'T1098' AS attck, eventid, datetime, substr(data,1,600) AS data FROM windows_eventlog WHERE channel = 'Security' AND eventid IN (4720,4722,4723,4724,4725,4726,4728,4729,4732,4733,4738,4740,4756,4757,4767,4798,4799) AND timestamp = '604800000' LIMIT 200;
+SELECT 'IAM.CHANGE' AS sig, 'T1098' AS attck, eventid, datetime, substr(data,1,600) AS data FROM windows_eventlog WHERE channel = 'Security' AND eventid IN (4720,4722,4723,4724,4725,4726,4728,4729,4732,4733,4738,4740,4756,4757,4767,4798,4799) AND timestamp = '43200000' LIMIT 200;
 ```
 
 Event-code logon types (numeric, Security channel only — a different vocabulary
@@ -328,7 +362,7 @@ from `logon_sessions.logon_type`): 2 interactive, 3 network, 4 batch, 5 service,
 Targeted source-IP hunt, only after E-CLEAR shows the channel is intact:
 
 ```sql
-SELECT 'AUTH.LOGON.IP' AS sig, 'T1078' AS attck, eventid, datetime, substr(data,1,800) AS data FROM windows_eventlog WHERE channel = 'Security' AND eventid IN (4624,4625) AND timestamp = '604800000' AND data LIKE '%<IP>%' LIMIT 100;
+SELECT 'AUTH.LOGON.IP' AS sig, 'T1078' AS attck, eventid, datetime, substr(data,1,800) AS data FROM windows_eventlog WHERE channel = 'Security' AND eventid IN (4624,4625) AND timestamp = '43200000' AND data LIKE '%<IP>%' LIMIT 100;
 ```
 
 ### E-PROC — process creation and audit-policy state (T1059, T1218.*, T1036.005)
@@ -343,7 +377,7 @@ SELECT 'AUDIT.4688' AS sig, 'T1562.002' AS attck, count(*) AS n FROM windows_eve
 B2. `n > 0` → hunt the patterns:
 
 ```sql
-SELECT 'EXEC.4688' AS sig, 'T1059' AS attck, datetime, json_extract(data,'$.EventData.NewProcessName') AS proc, json_extract(data,'$.EventData.ParentProcessName') AS parent, json_extract(data,'$.EventData.CommandLine') AS cmdline, json_extract(data,'$.EventData.SubjectUserName') AS user FROM windows_eventlog WHERE channel = 'Security' AND eventid = 4688 AND timestamp = '604800000' LIMIT 500;
+SELECT 'EXEC.4688' AS sig, 'T1059' AS attck, datetime, json_extract(data,'$.EventData.NewProcessName') AS proc, json_extract(data,'$.EventData.ParentProcessName') AS parent, json_extract(data,'$.EventData.CommandLine') AS cmdline, json_extract(data,'$.EventData.SubjectUserName') AS user FROM windows_eventlog WHERE channel = 'Security' AND eventid = 4688 AND timestamp = '43200000' LIMIT 500;
 ```
 
 Filter client-side for: `-enc`/`-EncodedCommand`, `-w hidden`, `-nop`,
@@ -363,13 +397,13 @@ pushdown has already cut the result to a readable size.
 ### E-PS — PowerShell (T1059.001, T1027.010)
 
 ```sql
-SELECT 'EXEC.PS' AS sig, 'T1059.001' AS attck, eventid, datetime, substr(json_extract(data,'$.EventData.ScriptBlockText'),1,1500) AS script, json_extract(data,'$.EventData.Path') AS path FROM windows_eventlog WHERE channel = 'Microsoft-Windows-PowerShell/Operational' AND eventid IN (4103,4104) AND timestamp = '604800000' LIMIT 200;
+SELECT 'EXEC.PS' AS sig, 'T1059.001' AS attck, eventid, datetime, substr(json_extract(data,'$.EventData.ScriptBlockText'),1,1500) AS script, json_extract(data,'$.EventData.Path') AS path FROM windows_eventlog WHERE channel = 'Microsoft-Windows-PowerShell/Operational' AND eventid IN (4103,4104) AND timestamp = '43200000' LIMIT 200;
 ```
 
 Legacy engine channel, worth a shot when the modern one is empty:
 
 ```sql
-SELECT 'EXEC.PS.LEGACY' AS sig, 'T1059.001' AS attck, eventid, datetime, substr(data,1,1000) AS data FROM windows_eventlog WHERE channel = 'Windows PowerShell' AND eventid IN (400,403,600,800) AND timestamp = '604800000' LIMIT 100;
+SELECT 'EXEC.PS.LEGACY' AS sig, 'T1059.001' AS attck, eventid, datetime, substr(data,1,1000) AS data FROM windows_eventlog WHERE channel = 'Windows PowerShell' AND eventid IN (400,403,600,800) AND timestamp = '43200000' LIMIT 100;
 ```
 
 4104 at `level = 3` (warning) is the suspicious-block classification Microsoft
@@ -379,7 +413,7 @@ script-block logging is off, not that PowerShell did not run.
 ### E-SYS — services, drivers, boot, shutdown (T1543.003, T1489, T1562.001, T1014)
 
 ```sql
-SELECT 'PERSIST.SVCINSTALL' AS sig, 'T1543.003' AS attck, eventid, datetime, substr(data,1,600) AS data FROM windows_eventlog WHERE channel = 'System' AND eventid IN (7045,7040,7034,7031,7000,7009,104,6005,6006,6008,1074,219) AND timestamp = '604800000' LIMIT 200;
+SELECT 'PERSIST.SVCINSTALL' AS sig, 'T1543.003' AS attck, eventid, datetime, substr(data,1,600) AS data FROM windows_eventlog WHERE channel = 'System' AND eventid IN (7045,7040,7034,7031,7000,7009,104,6005,6006,6008,1074,219) AND timestamp = '43200000' LIMIT 200;
 ```
 
 `7045` names the service, its image path and start type — the single highest-value
@@ -389,7 +423,7 @@ being deleted. `104` is a System-channel log clear.
 ### E-TASK — scheduled task lifecycle (T1053.005)
 
 ```sql
-SELECT 'PERSIST.TASKEVENT' AS sig, 'T1053.005' AS attck, eventid, datetime, substr(data,1,500) AS data FROM windows_eventlog WHERE channel = 'Microsoft-Windows-TaskScheduler/Operational' AND eventid IN (106,140,141,200,201,325,329) AND timestamp = '604800000' LIMIT 200;
+SELECT 'PERSIST.TASKEVENT' AS sig, 'T1053.005' AS attck, eventid, datetime, substr(data,1,500) AS data FROM windows_eventlog WHERE channel = 'Microsoft-Windows-TaskScheduler/Operational' AND eventid IN (106,140,141,200,201,325,329) AND timestamp = '43200000' LIMIT 200;
 ```
 
 Security-channel equivalents, when the TaskScheduler channel is disabled:
@@ -400,11 +434,11 @@ Security-channel equivalents, when the TaskScheduler channel is disabled:
 Two different channels; do not conflate them.
 
 ```sql
-SELECT 'LATERAL.RDP.AUTH' AS sig, 'T1021.001' AS attck, eventid, datetime, substr(data,1,600) AS data FROM windows_eventlog WHERE channel = 'Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational' AND eventid IN (1149,261) AND timestamp = '604800000' LIMIT 100;
+SELECT 'LATERAL.RDP.AUTH' AS sig, 'T1021.001' AS attck, eventid, datetime, substr(data,1,600) AS data FROM windows_eventlog WHERE channel = 'Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational' AND eventid IN (1149,261) AND timestamp = '43200000' LIMIT 100;
 ```
 
 ```sql
-SELECT 'LATERAL.RDP.SESSION' AS sig, 'T1021.001' AS attck, eventid, datetime, substr(data,1,600) AS data FROM windows_eventlog WHERE channel = 'Microsoft-Windows-TerminalServices-LocalSessionManager/Operational' AND eventid IN (21,22,23,24,25,39,40) AND timestamp = '604800000' LIMIT 100;
+SELECT 'LATERAL.RDP.SESSION' AS sig, 'T1021.001' AS attck, eventid, datetime, substr(data,1,600) AS data FROM windows_eventlog WHERE channel = 'Microsoft-Windows-TerminalServices-LocalSessionManager/Operational' AND eventid IN (21,22,23,24,25,39,40) AND timestamp = '43200000' LIMIT 100;
 ```
 
 - `1149` (RemoteConnectionManager) = authentication succeeded, carries the
@@ -419,7 +453,7 @@ SELECT 'LATERAL.RDP.SESSION' AS sig, 'T1021.001' AS attck, eventid, datetime, su
 ### E-WMI — WMI activity (T1047, T1546.003)
 
 ```sql
-SELECT 'EXEC.WMI' AS sig, 'T1047' AS attck, eventid, datetime, substr(data,1,700) AS data FROM windows_eventlog WHERE channel = 'Microsoft-Windows-WMI-Activity/Operational' AND eventid IN (5857,5858,5859,5860,5861) AND timestamp = '604800000' LIMIT 200;
+SELECT 'EXEC.WMI' AS sig, 'T1047' AS attck, eventid, datetime, substr(data,1,700) AS data FROM windows_eventlog WHERE channel = 'Microsoft-Windows-WMI-Activity/Operational' AND eventid IN (5857,5858,5859,5860,5861) AND timestamp = '43200000' LIMIT 200;
 ```
 
 `5861` is the permanent-event-subscription record — the event-log counterpart of
@@ -428,7 +462,7 @@ B1's WMI binding rows. Two independent sources agreeing is a confirmed finding.
 ### E-DEFENDER — AV detections and tampering (T1562.001)
 
 ```sql
-SELECT 'DETECT.AV' AS sig, 'T1562.001' AS attck, eventid, datetime, substr(data,1,700) AS data FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Windows Defender/Operational' AND eventid IN (1006,1007,1008,1009,1015,1116,1117,1118,1119,5001,5004,5007,5010,5012,5013) AND timestamp = '604800000' LIMIT 200;
+SELECT 'DETECT.AV' AS sig, 'T1562.001' AS attck, eventid, datetime, substr(data,1,700) AS data FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Windows Defender/Operational' AND eventid IN (1006,1007,1008,1009,1015,1116,1117,1118,1119,5001,5004,5007,5010,5012,5013) AND timestamp = '43200000' LIMIT 200;
 ```
 
 `1116`/`1117` are detection and action-taken. `5001`/`5010`/`5012` are
@@ -440,14 +474,14 @@ WFP connection events live in **Security**, not the Firewall channel. Getting
 this backwards returns zero rows and reads like a clean host.
 
 ```sql
-SELECT 'NET.WFP' AS sig, 'T1571' AS attck, eventid, datetime, substr(data,1,600) AS data FROM windows_eventlog WHERE channel = 'Security' AND eventid IN (5140,5145,5152,5154,5156,5157,5158) AND timestamp = '86400000' LIMIT 300;
+SELECT 'NET.WFP' AS sig, 'T1571' AS attck, eventid, datetime, substr(data,1,600) AS data FROM windows_eventlog WHERE channel = 'Security' AND eventid IN (5140,5145,5152,5154,5156,5157,5158) AND timestamp = '43200000' LIMIT 300;
 ```
 
 ```sql
-SELECT 'DEFEND.FWCHANGE' AS sig, 'T1562.004' AS attck, eventid, datetime, substr(data,1,600) AS data FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Windows Firewall With Advanced Security/Firewall' AND eventid IN (2004,2005,2006,2009,2033) AND timestamp = '604800000' LIMIT 100;
+SELECT 'DEFEND.FWCHANGE' AS sig, 'T1562.004' AS attck, eventid, datetime, substr(data,1,600) AS data FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Windows Firewall With Advanced Security/Firewall' AND eventid IN (2004,2005,2006,2009,2033) AND timestamp = '43200000' LIMIT 100;
 ```
 
-`5156` volume is enormous — keep the window at 24 h or narrow with a
+`5156` volume is enormous — keep the window at 12 h or narrow with a
 `data LIKE '%<IP>%'` predicate for a known indicator.
 
 ### E-CLEAR — log integrity (T1070.001, T1562.002)
@@ -468,7 +502,7 @@ gap that looks like a gap.
 ### E-BITS — background transfer abuse (T1197, T1105)
 
 ```sql
-SELECT 'EXEC.BITS' AS sig, 'T1197' AS attck, eventid, datetime, substr(data,1,600) AS data FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Bits-Client/Operational' AND eventid IN (3,4,59,60,61) AND timestamp = '604800000' LIMIT 100;
+SELECT 'EXEC.BITS' AS sig, 'T1197' AS attck, eventid, datetime, substr(data,1,600) AS data FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Bits-Client/Operational' AND eventid IN (3,4,59,60,61) AND timestamp = '43200000' LIMIT 100;
 ```
 
 ### E-SYSMON — superseded
@@ -567,7 +601,7 @@ far as the Security channel does.
 ### S-PROC — process creation with full context (T1059, T1036.003, T1218.*)
 
 ```sql
-SELECT 'SYSMON.PROC' AS sig, 'T1059' AS attck, datetime, json_extract(data,'$.EventData.Image') AS image, json_extract(data,'$.EventData.CommandLine') AS cmdline, json_extract(data,'$.EventData.ParentImage') AS parent, substr(json_extract(data,'$.EventData.ParentCommandLine'),1,300) AS parent_cmdline, json_extract(data,'$.EventData.User') AS user, json_extract(data,'$.EventData.IntegrityLevel') AS integrity, json_extract(data,'$.EventData.OriginalFileName') AS original_name, json_extract(data,'$.EventData.Hashes') AS hashes, json_extract(data,'$.EventData.ProcessGuid') AS pguid, json_extract(data,'$.EventData.ParentProcessGuid') AS parent_guid FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid = 1 AND timestamp = '86400000' LIMIT 500;
+SELECT 'SYSMON.PROC' AS sig, 'T1059' AS attck, datetime, json_extract(data,'$.EventData.Image') AS image, json_extract(data,'$.EventData.CommandLine') AS cmdline, json_extract(data,'$.EventData.ParentImage') AS parent, substr(json_extract(data,'$.EventData.ParentCommandLine'),1,300) AS parent_cmdline, json_extract(data,'$.EventData.User') AS user, json_extract(data,'$.EventData.IntegrityLevel') AS integrity, json_extract(data,'$.EventData.OriginalFileName') AS original_name, json_extract(data,'$.EventData.Hashes') AS hashes, json_extract(data,'$.EventData.ProcessGuid') AS pguid, json_extract(data,'$.EventData.ParentProcessGuid') AS parent_guid FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid = 1 AND timestamp = '43200000' LIMIT 500;
 ```
 
 - `OriginalFileName` != the filename in `Image` is a renamed binary. This is the
@@ -590,11 +624,11 @@ SELECT 'SYSMON.PROC' AS sig, 'T1059' AS attck, datetime, json_extract(data,'$.Ev
 ### S-NET — network and DNS with process attribution (T1071.001, T1071.004, T1571)
 
 ```sql
-SELECT 'SYSMON.NET' AS sig, 'T1071.001' AS attck, datetime, json_extract(data,'$.EventData.Image') AS image, json_extract(data,'$.EventData.User') AS user, json_extract(data,'$.EventData.DestinationIp') AS dst_ip, json_extract(data,'$.EventData.DestinationPort') AS dst_port, json_extract(data,'$.EventData.DestinationHostname') AS dst_host, json_extract(data,'$.EventData.Protocol') AS proto, json_extract(data,'$.EventData.Initiated') AS initiated FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid = 3 AND timestamp = '86400000' LIMIT 500;
+SELECT 'SYSMON.NET' AS sig, 'T1071.001' AS attck, datetime, json_extract(data,'$.EventData.Image') AS image, json_extract(data,'$.EventData.User') AS user, json_extract(data,'$.EventData.DestinationIp') AS dst_ip, json_extract(data,'$.EventData.DestinationPort') AS dst_port, json_extract(data,'$.EventData.DestinationHostname') AS dst_host, json_extract(data,'$.EventData.Protocol') AS proto, json_extract(data,'$.EventData.Initiated') AS initiated FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid = 3 AND timestamp = '43200000' LIMIT 500;
 ```
 
 ```sql
-SELECT 'SYSMON.DNS' AS sig, 'T1071.004' AS attck, datetime, json_extract(data,'$.EventData.QueryName') AS query, json_extract(data,'$.EventData.QueryStatus') AS status, substr(json_extract(data,'$.EventData.QueryResults'),1,300) AS results, json_extract(data,'$.EventData.Image') AS image FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid = 22 AND timestamp = '86400000' LIMIT 500;
+SELECT 'SYSMON.DNS' AS sig, 'T1071.004' AS attck, datetime, json_extract(data,'$.EventData.QueryName') AS query, json_extract(data,'$.EventData.QueryStatus') AS status, substr(json_extract(data,'$.EventData.QueryResults'),1,300) AS results, json_extract(data,'$.EventData.Image') AS image FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid = 22 AND timestamp = '43200000' LIMIT 500;
 ```
 
 `DestinationHostname` and `SourceHostname` are populated only when the config
@@ -610,7 +644,7 @@ mapping on the host — `dns_lookup_events` expires within the hour and
 ### S-IMG — driver and image load (T1574.001, T1574.002, T1068, T1014)
 
 ```sql
-SELECT 'SYSMON.IMGLOAD' AS sig, 'T1574.002' AS attck, eventid, datetime, json_extract(data,'$.EventData.Image') AS image, json_extract(data,'$.EventData.ImageLoaded') AS loaded, json_extract(data,'$.EventData.Signed') AS signed, json_extract(data,'$.EventData.SignatureStatus') AS sig_status, json_extract(data,'$.EventData.Hashes') AS hashes FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid IN (6,7) AND timestamp = '86400000' LIMIT 400;
+SELECT 'SYSMON.IMGLOAD' AS sig, 'T1574.002' AS attck, eventid, datetime, json_extract(data,'$.EventData.Image') AS image, json_extract(data,'$.EventData.ImageLoaded') AS loaded, json_extract(data,'$.EventData.Signed') AS signed, json_extract(data,'$.EventData.SignatureStatus') AS sig_status, json_extract(data,'$.EventData.Hashes') AS hashes FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid IN (6,7) AND timestamp = '43200000' LIMIT 400;
 ```
 
 `Signed = false` on a DLL loaded from a user-writable directory by a signed
@@ -621,7 +655,7 @@ path into B7's `loldrivers_*.yar` rule files.
 ### S-INJECT — injection, credential access, tampering (T1055, T1003.001, T1055.012)
 
 ```sql
-SELECT 'SYSMON.INJECT' AS sig, 'T1055' AS attck, eventid, datetime, json_extract(data,'$.EventData.SourceImage') AS src_image, json_extract(data,'$.EventData.TargetImage') AS tgt_image, json_extract(data,'$.EventData.GrantedAccess') AS granted, substr(json_extract(data,'$.EventData.CallTrace'),1,400) AS call_trace, json_extract(data,'$.EventData.StartModule') AS start_module, json_extract(data,'$.EventData.Type') AS tamper_type FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid IN (8,10,25) AND timestamp = '86400000' LIMIT 300;
+SELECT 'SYSMON.INJECT' AS sig, 'T1055' AS attck, eventid, datetime, json_extract(data,'$.EventData.SourceImage') AS src_image, json_extract(data,'$.EventData.TargetImage') AS tgt_image, json_extract(data,'$.EventData.GrantedAccess') AS granted, substr(json_extract(data,'$.EventData.CallTrace'),1,400) AS call_trace, json_extract(data,'$.EventData.StartModule') AS start_module, json_extract(data,'$.EventData.Type') AS tamper_type FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid IN (8,10,25) AND timestamp = '43200000' LIMIT 300;
 ```
 
 - Event 10 with `TargetImage` ending `lsass.exe` and `GrantedAccess` containing
@@ -634,7 +668,7 @@ SELECT 'SYSMON.INJECT' AS sig, 'T1055' AS attck, eventid, datetime, json_extract
 ### S-FILE — creation, streams, deletion, timestomping (T1105, T1564.004, T1070.004, T1070.006)
 
 ```sql
-SELECT 'SYSMON.FILE' AS sig, 'T1105' AS attck, eventid, datetime, json_extract(data,'$.EventData.Image') AS image, json_extract(data,'$.EventData.TargetFilename') AS target, json_extract(data,'$.EventData.Hashes') AS hashes, json_extract(data,'$.EventData.Contents') AS stream_contents, json_extract(data,'$.EventData.PreviousCreationUtcTime') AS prev_ctime, json_extract(data,'$.EventData.IsExecutable') AS is_exe FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid IN (2,11,15,23) AND timestamp = '86400000' LIMIT 500;
+SELECT 'SYSMON.FILE' AS sig, 'T1105' AS attck, eventid, datetime, json_extract(data,'$.EventData.Image') AS image, json_extract(data,'$.EventData.TargetFilename') AS target, json_extract(data,'$.EventData.Hashes') AS hashes, json_extract(data,'$.EventData.Contents') AS stream_contents, json_extract(data,'$.EventData.PreviousCreationUtcTime') AS prev_ctime, json_extract(data,'$.EventData.IsExecutable') AS is_exe FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid IN (2,11,15,23) AND timestamp = '43200000' LIMIT 500;
 ```
 
 - Event 15 is the mark-of-the-web record: `Contents` holds the `Zone.Identifier`
@@ -651,7 +685,7 @@ SELECT 'SYSMON.FILE' AS sig, 'T1105' AS attck, eventid, datetime, json_extract(d
 ### S-REG — registry writes with the writing process (T1547.001, T1112, T1562.001)
 
 ```sql
-SELECT 'SYSMON.REG' AS sig, 'T1112' AS attck, eventid, datetime, json_extract(data,'$.EventData.EventType') AS event_type, json_extract(data,'$.EventData.TargetObject') AS target, json_extract(data,'$.EventData.Details') AS details, json_extract(data,'$.EventData.Image') AS image FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid IN (12,13,14) AND timestamp = '86400000' LIMIT 400;
+SELECT 'SYSMON.REG' AS sig, 'T1112' AS attck, eventid, datetime, json_extract(data,'$.EventData.EventType') AS event_type, json_extract(data,'$.EventData.TargetObject') AS target, json_extract(data,'$.EventData.Details') AS details, json_extract(data,'$.EventData.Image') AS image FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid IN (12,13,14) AND timestamp = '43200000' LIMIT 400;
 ```
 
 `registry.mtime` from B1R tells you *when* a Run key was written; this tells you
@@ -661,11 +695,11 @@ artefact is what moves a finding to high confidence.
 ### S-PIPE / S-WMI — named pipes and WMI subscriptions (T1021.002, T1047, T1546.003)
 
 ```sql
-SELECT 'SYSMON.PIPE' AS sig, 'T1021.002' AS attck, eventid, datetime, json_extract(data,'$.EventData.PipeName') AS pipe, json_extract(data,'$.EventData.Image') AS image FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid IN (17,18) AND timestamp = '86400000' LIMIT 300;
+SELECT 'SYSMON.PIPE' AS sig, 'T1021.002' AS attck, eventid, datetime, json_extract(data,'$.EventData.PipeName') AS pipe, json_extract(data,'$.EventData.Image') AS image FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid IN (17,18) AND timestamp = '43200000' LIMIT 300;
 ```
 
 ```sql
-SELECT 'SYSMON.WMI' AS sig, 'T1546.003' AS attck, eventid, datetime, json_extract(data,'$.EventData.Operation') AS op, json_extract(data,'$.EventData.User') AS user, json_extract(data,'$.EventData.Name') AS name, substr(json_extract(data,'$.EventData.Query'),1,300) AS query, json_extract(data,'$.EventData.Consumer') AS consumer, json_extract(data,'$.EventData.Destination') AS destination FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid IN (19,20,21) AND timestamp = '604800000' LIMIT 200;
+SELECT 'SYSMON.WMI' AS sig, 'T1546.003' AS attck, eventid, datetime, json_extract(data,'$.EventData.Operation') AS op, json_extract(data,'$.EventData.User') AS user, json_extract(data,'$.EventData.Name') AS name, substr(json_extract(data,'$.EventData.Query'),1,300) AS query, json_extract(data,'$.EventData.Consumer') AS consumer, json_extract(data,'$.EventData.Destination') AS destination FROM windows_eventlog WHERE channel = 'Microsoft-Windows-Sysmon/Operational' AND eventid IN (19,20,21) AND timestamp = '43200000' LIMIT 200;
 ```
 
 Sysmon 17/18 give the pipe **and its process** — B4's `NET.PIPE` gives only what
