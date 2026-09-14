@@ -5,7 +5,7 @@
  * sigurl:    https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/packer.yar
  * Source:    https://github.com/elastic/protections-artifacts.git
  * Commit:    da027f6cc36c20ce0a4e77b01b5f43415cc9791f
- * Generated: 2026-09-07
+ * Generated: 2026-09-14
  * Rules:     1   Upstream files: 1
  *
  * Upstream rules are licensed under the Elastic License 2.0.
