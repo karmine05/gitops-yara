@@ -1,6 +1,6 @@
 # Rule index
 
-Builds rules from `https://github.com/elastic/protections-artifacts.git` @ `da027f6cc36c` and `https://github.com/magicsword-io/LOLDrivers.git` @ `1c60ea1c8909`, 2026-09-14.
+Builds rules from `https://github.com/elastic/protections-artifacts.git` @ `ce99f77ba7cc` and `https://github.com/magicsword-io/LOLDrivers.git` @ `67ac4a76a641`, 2026-09-21.
 
 Pass any `sigurl` below to `yara_file` or `yara_process`. One allowlist
 entry in agent options covers this whole tree.
@@ -44,14 +44,14 @@ entry in agent options covers this whole tree.
 
 | File | Rules | Size | sigurl |
 |---|---:|---:|---|
-| `windows/_all.yar` | 2028 | 2488 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/_all.yar` |
+| `windows/_all.yar` | 2029 | 2489 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/_all.yar` |
 | `windows/attacksimulation.yar` | 1 | 1 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/attacksimulation.yar` |
 | `windows/backdoor.yar` | 4 | 5 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/backdoor.yar` |
 | `windows/clickfraud.yar` | 1 | 1 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/clickfraud.yar` |
 | `windows/cryptominer.yar` | 2 | 2 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/cryptominer.yar` |
 | `windows/exploit.yar` | 11 | 10 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/exploit.yar` |
 | `windows/generic.yar` | 318 | 246 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/generic.yar` |
-| `windows/hacktool.yar` | 68 | 80 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/hacktool.yar` |
+| `windows/hacktool.yar` | 69 | 81 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/hacktool.yar` |
 | `windows/infostealer.yar` | 5 | 5 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/infostealer.yar` |
 | `windows/loldrivers_maldriver.yar` | 48 | 119 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/loldrivers_maldriver.yar` |
 | `windows/loldrivers_vulndriver.yar` | 744 | 1532 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/loldrivers_vulndriver.yar` |

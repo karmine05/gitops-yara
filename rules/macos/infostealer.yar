@@ -4,8 +4,8 @@
  *
  * sigurl:    https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos/infostealer.yar
  * Source:    https://github.com/elastic/protections-artifacts.git
- * Commit:    da027f6cc36c20ce0a4e77b01b5f43415cc9791f
- * Generated: 2026-09-14
+ * Commit:    ce99f77ba7cc2e442589d49e01b9db262d31ae91
+ * Generated: 2026-09-21
  * Rules:     12   Upstream files: 8
  *
  * Upstream rules are licensed under the Elastic License 2.0.
