@@ -1,6 +1,6 @@
 # Rule index
 
-Builds rules from `https://github.com/elastic/protections-artifacts.git` @ `ce99f77ba7cc` and `https://github.com/magicsword-io/LOLDrivers.git` @ `67ac4a76a641`, 2026-09-21.
+Builds rules from `https://github.com/elastic/protections-artifacts.git` @ `ce99f77ba7cc` and `https://github.com/magicsword-io/LOLDrivers.git` @ `9fa32adeab86`, 2026-09-28.
 
 Pass any `sigurl` below to `yara_file` or `yara_process`. One allowlist
 entry in agent options covers this whole tree.

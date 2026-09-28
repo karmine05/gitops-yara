@@ -4,8 +4,8 @@
  *
  * sigurl:    https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/loldrivers_vulndriver.yar
  * Source:    https://github.com/magicsword-io/LOLDrivers.git
- * Commit:    67ac4a76a641d94c1c14e169df4ee7ca2754f20a
- * Generated: 2026-09-21
+ * Commit:    9fa32adeab865455de8b24cba0bbc0f3439d59f7
+ * Generated: 2026-09-28
  * Rules:     744   Upstream files: 1
  *
  * LOLDrivers rules are licensed under Apache-2.0.

@@ -1,168 +1,168 @@
 upstream https://github.com/elastic/protections-artifacts.git
 commit   ce99f77ba7cc2e442589d49e01b9db262d31ae91
 loldrivers https://github.com/magicsword-io/LOLDrivers.git
-commit   67ac4a76a641d94c1c14e169df4ee7ca2754f20a
-built    2026-09-21
+commit   9fa32adeab865455de8b24cba0bbc0f3439d59f7
+built    2026-09-28
 
 linux/_all.yar
   rules 957  files 274  bytes 774386
-  sha256 a6ba141c84c477e371dd45ef8bae8b288dadcb3653efa3a5401bdc7a7ce6fd56
+  sha256 bca00628fce5f55b188680acf6333a2ff8a79a28b729151b2bbeb46ffe1ecc73
 linux/backdoor.yar
   rules 6  files 5  bytes 5700
-  sha256 44fb77dbf2fd7ea88b8f8c565c40522b3ea15dd2bf9bf552ca1ad45d6829a4cd
+  sha256 f3489a69c77604d22a0833682b1da5dd412c588b8bec6a8c9ee5657a68c004ed
 linux/cryptominer.yar
   rules 128  files 23  bytes 94119
-  sha256 e3edea33eca536ef46488c18063d57cce69ee29741d600baf3e86c2556b07770
+  sha256 5f9a1fbfb3917bceb2ba2e183c473645386df05aefd3bb0852922053cc195df8
 linux/downloader.yar
   rules 1  files 1  bytes 1280
-  sha256 a7e6f34abf24000e0e0161cf260c67b70d9a293dc5d09e7cc77a0246062d5232
+  sha256 fc2dd2b6c58cfc87c16965c178fe4db0dd0f70943c931719812b6902862a9e22
 linux/exploit.yar
   rules 122  files 57  bytes 96321
-  sha256 e40231571ffe2d3880fec1e14010a925a9c90aed91f377ff26667ea2459dc542
+  sha256 c7eaa5ac5c07f0832efa7e21587ffa3131c7fa9cc2fb3e899ed1af259495e53d
 linux/generic.yar
   rules 70  files 1  bytes 59581
-  sha256 d8c2031eb7dd53b77d92a2d9ded7680a65119f22b4b70ccbe012eb64958917fa
+  sha256 8801b7ddcb3b53436cf6abd2b095a96e7643ffc5a868df24c694fe165f89387b
 linux/hacktool.yar
   rules 58  files 15  bytes 46705
-  sha256 3a27819d7e1e3f4b022f13c580936fab3a5f8b4a97ac25f21bc17cb8e87b7aca
+  sha256 dd0a1fd8b389517c5e9356b5723a2282d12912cbd042abb4a34ea21ae123233f
 linux/packer.yar
   rules 1  files 1  bytes 1352
-  sha256 cd16556de02660a0125e0889a995725c6f3e41cd0127b58db8be1c31e89e45c2
+  sha256 401182f472d52cb8f972cb26922312c4682e7dd80ef7e946ad3014996fc0b9c6
 linux/proxy.yar
   rules 1  files 1  bytes 1639
-  sha256 e49e8ed49bc8e57f4869625711c49baaa8ffb07c1a9e809f06ece2dabb7181c5
+  sha256 b7a327667cfd844702f79145fa862d2c40a44ee4d59320b183fe8551c8c01033
 linux/ransomware.yar
   rules 28  files 24  bytes 25078
-  sha256 83021dfc115d54ad103bc9a3d1cfd1d0c7add2d93ac4e05275b5c6d65991dc76
+  sha256 83d15783004d3674aa45047e66d3e268ffcbdd31894db50332c1f1a61108c4fe
 linux/rootkit.yar
   rules 27  files 19  bytes 35043
-  sha256 3ec4c0da16a750c71913f91feee5254be5cb8b17392ce79e54fadb28625e8ce2
+  sha256 2271029a60e9c5d33fcb03c9a3ec85fa7fd9c99289a64fa4eaed0d53ab5dc6e6
 linux/shellcode.yar
   rules 8  files 1  bytes 6226
-  sha256 b220369054c9f619ee3f56903bbd4f11b8e0a4faa19a76a87883c641cabd18c7
+  sha256 3244fe58e761ddfdc5df3327b65079698adc3267345930a5e174f239fdf5c4c8
 linux/trojan.yar
   rules 441  files 94  bytes 334593
-  sha256 6b6b7e2a83099b4f910dbd904b478c9e2eb89eaebfcb7aeec5dddb6892c7f8bd
+  sha256 49d53ccc860c43cb80c8a240fd20e76c1eb8632009b8f2985d8ffce4063fc120
 linux/virus.yar
   rules 5  files 4  bytes 4168
-  sha256 a79e4d00d9a7781298014fac3ffbaa5c0c116ed96b2a44f087d6682b5e481dc5
+  sha256 aa1754d707fa318703162d359e029d562a70b385a69a247c7ea2be508e0fc6fb
 linux/webshell.yar
   rules 2  files 1  bytes 1987
-  sha256 d79d29087293258fcf28aa8522a2e08a12daa1a2b3da4ea798b45ba3b5371e93
+  sha256 1a0892ac2d825c5c26266462a4e1116eacd378f3415790c1826c935fcdd4d071
 linux/worm.yar
   rules 4  files 1  bytes 3380
-  sha256 0485e0fc82c0bea9753f24acc9e392a5ac1e5acc67abd16cf50fa9471a24c331
+  sha256 3419423590a2d0570ec53d20a5a95d242aedb6302c8ae22787f42a73140542ae
 macos/_all.yar
   rules 150  files 74  bytes 154568
-  sha256 ab85704c40976f654b8f1216371d04f82f52ac555988f19d8efe8de64815b065
+  sha256 7d3ba93fa98386d5e6685ab77f1cbe154315edfc13a5281bd205c4ff6fafc93d
 macos/backdoor.yar
   rules 7  files 5  bytes 6551
-  sha256 92de9a3f44477fc797b3d5a791b92261129e0f1400abd8a75a0ceab2ebd83e3b
+  sha256 1525183ea3380e154d0d716a96453efdd028a9ed70464953c80c4042ebd6b493
 macos/creddump.yar
   rules 1  files 1  bytes 1705
-  sha256 22a177300b18a644227a8e140176f6c73a70261f618b01371192fd53b2ffb8c8
+  sha256 e1685887a0bf2c15d7ffffebab1330ed8f0efcef44faf07f94bcd256a807d9e0
 macos/cryptominer.yar
   rules 4  files 2  bytes 3743
-  sha256 155f2a2f3ce7e8a1013b145f7dd260ce8d8e14c00286666a1d9df32b1bf9ac21
+  sha256 0f334f6ec2ab855ba041bb376a2928ea4cb6f0f0c07081de9430fcd4f7f93946
 macos/exploit.yar
   rules 1  files 1  bytes 1439
-  sha256 5a567c5290673e7ac3bb7fe2c59e8697a1bd07a323161c160c6191a2b2e0f28e
+  sha256 75e6b66a2d18cb687de510eaf62b68d09775d336722792fbf63866bb82173a9e
 macos/hacktool.yar
   rules 3  files 3  bytes 4764
-  sha256 4914861b7d542692965ae8be0ffd27400bba7b0f0ac3c03e3a22e190d2124319
+  sha256 73ccf828f465e3ce49215241603eaba29cb800310599426eea4cfa44e90d13d2
 macos/infostealer.yar
   rules 12  files 8  bytes 18267
-  sha256 dc13b7bb4b3a9230e7707c965af5d8fc8ef45622157517d4c3a2f51d06a2f879
+  sha256 d490131e1f076e85cdc0e1ab8c794e3f9401e4dd2fd130c3f88756340b3b12d5
 macos/trojan.yar
   rules 60  files 25  bytes 51808
-  sha256 d6ad36d6fbc9a306aad7ab845796ecafc2e11af75eb3a1521ae54a57903c2b0a
+  sha256 de67605f0c425e78368b20eec88946e9baf54f9ab983914e3d86e8356614e1ce
 macos/virus.yar
   rules 7  files 3  bytes 5569
-  sha256 0185b2829c2f121c935d45b7fed28cfabc31ae9bde2c8124fe97a2dca40faa56
+  sha256 d7c3e083edd73bac73bff81bb5c463277261437dc80ee3bc076e4b5ce34c0112
 multi/_all.yar
   rules 55  files 26  bytes 64740
-  sha256 5dc994124c0a19dd4979149f18bee813847b0c7336c0ada7212f451e161a924e
+  sha256 5fe995c1fe6814a5ed5e528cfc24acce191a1f27205bdc63ef087e711c6bb4b0
 multi/attacksimulation.yar
   rules 1  files 1  bytes 1183
-  sha256 b09cc2e1437578fe6177df61e3eb117e5a1ba758dd56f205fc837f1618e12019
+  sha256 dc9535bc702ea309d39f42e21af5cab14af6c094b1a0b224f6a41f727930c1c7
 multi/cryptominer.yar
   rules 1  files 1  bytes 1494
-  sha256 f8dc74308532cc5cb10578660c5a1622a4aed1def7a9ff1b03242b7d23e0fe9d
+  sha256 21ba5adf76fdc41aa25c084e4dca0f66bc64547ce13a007fbca03b6d1983c619
 multi/eicar.yar
   rules 1  files 1  bytes 1168
-  sha256 c8c73b3451c588eee7ee2e45fb82bd184fc7b1d898f3c7198eb78982b7424faf
+  sha256 84c04cccfbbe5f0065b81353eac4592705a23f4ee7ffd81c92724a11a83987b8
 multi/generic.yar
   rules 1  files 1  bytes 1310
-  sha256 09c3a0616ef35df08e8975d2b67d64ba1fe32626f7c76945b4abc47f27bb3ad8
+  sha256 26c61a61cb9c9be00629cb7f25adcfd290aba7eab83545a6010eddfee45e1464
 multi/hacktool.yar
   rules 24  files 6  bytes 30981
-  sha256 8efdc44b1e99f8cd76ba21746de654728fcdaa05bd953044549d8458d31df073
+  sha256 2262b43016ff9c30efbb48d61aeefc05dfbc48ec3a0be78c276c4ad4e1b5c4c1
 multi/ransomware.yar
   rules 12  files 7  bytes 12389
-  sha256 ed35ca95010a93a93e29078654c36ee9b8fff3c0acaabd7e7d7d3d20d107a1ab
+  sha256 b0878979440f29fa64b093076ad6d007fb6b87081fb161ca8fa57708122882e2
 multi/trojan.yar
   rules 15  files 9  bytes 19250
-  sha256 d00ec3e8891bc1ab7ccea37bd7f8b84909552ace9d10daf9f4ddbab052301401
+  sha256 ca49d9d9b14d6a1ab2d239ebecda586599151240c4e2f7b7f6cfa027c2b02e59
 windows/_all.yar
   rules 2029  files 746  bytes 2549081
-  sha256 6f40d206d2eec98767152485ab0fb571a06a02734f6621943811a81a9f7990a5
+  sha256 86815a2dd72cc5afe2f4ab08f3e1dfc8ad9f722ccf5ab0c63a49c278ec4e0442
 windows/attacksimulation.yar
   rules 1  files 1  bytes 1328
-  sha256 e1899bcd2a77f5895b83df9393a1d66b9438c219ce10120ab96b3ac2fbf6500e
+  sha256 84398605f56af2ed47bc6435140cf43471e8b14de78226fc93a43f198a5fc66c
 windows/backdoor.yar
   rules 4  files 3  bytes 5431
-  sha256 74d7a40b6cc1f2e778927450053fed3a6b8ecf1f848cb33b3b9da8fb1d81d7e7
+  sha256 b3fe2f3822a28f35b53be50546efc7cf8685e216fdc905fc6e9634e45fddf512
 windows/clickfraud.yar
   rules 1  files 1  bytes 1657
-  sha256 3ab2b41efb5dcb1a1da71b6990cf3a3a247207295c0129bfcc3960fece531c3a
+  sha256 aff227445cf8ead2fde60df8746c68b242690e410a1c0aea1df4bb23a0a2b2d4
 windows/cryptominer.yar
   rules 2  files 1  bytes 2143
-  sha256 758fa328daaadda05d7575f316e8295f76315645711ab7376665a9c96891bb0c
+  sha256 0e897a2ba9a3784e7b701804de9714e66a23c931e578af6f4c6fc251677c10a8
 windows/exploit.yar
   rules 11  files 9  bytes 10834
-  sha256 12333a4712cb5afb477be67d253f59e677b38640773cc29cdb74c81a1287da3e
+  sha256 baa73d9b1aba14d5bcadbe509f88ecd7be57cf5d04038d8b99f616e3c9a14e21
 windows/generic.yar
   rules 318  files 2  bytes 252821
-  sha256 44899ec00b622a6321d1e0fe6a44bdbea2c9fe400a037aeb4784539e6c67b363
+  sha256 ec921badb9f3c863d94f70c3f8a378b4f72422ad7ea8e658a872c139bb60d059
 windows/hacktool.yar
   rules 69  files 47  bytes 83199
-  sha256 45a4f39db30adb8ea65842572d803182b7a90131438d1c61454de2cc83b1a3b3
+  sha256 e594fafc65f1df1e414d8842affa872d3bc2f7139c1d49f0bcc07b4b1ab54421
 windows/infostealer.yar
   rules 5  files 5  bytes 5927
-  sha256 5e026b10a37a28701fe5ded57b3acbfe5a3cc8d000467dcdf207cc6abb53f72f
+  sha256 cc40a191e7b813edfc5f06bc7dfba037a0a7292afac9fda5375fbf84821fdc76
 windows/loldrivers_maldriver.yar
   rules 48  files 1  bytes 122082
-  sha256 6c99a3c8a1ea1aaab950f091dc35bfa465c8ea7a8984e36443163d92a8e03bde
+  sha256 5d1d9b1e18398a44999b082e4431ac262a4c7405c461f38fa121954e059432ee
 windows/loldrivers_vulndriver.yar
   rules 744  files 1  bytes 1568892
-  sha256 842a0d128604a23470abe73da9f46203e42db0550a2fdaf7a16d65e51c4195e2
+  sha256 58f67b108b636ec5950dff33acba9ba0a379674e3dfb30dbc0138eabcdf67daa
 windows/packer.yar
   rules 1  files 1  bytes 1409
-  sha256 f87408e6a39b13c1bfebe8deacc0682ba6c86064b8713bc3ec450c1cdfd70992
+  sha256 f617fbd200be4b316c1e5e41400bd247b89b75ec4f03c06af0ed6ac97206aa9b
 windows/pup.yar
   rules 3  files 3  bytes 3274
-  sha256 43701c1818c007c9afaff2d82ecf0be9e7b5b78b4e4148b3a62fb0ef8943a5d2
+  sha256 5e83d75cec031b7ec2b9787db0bf36db35f7a90cd596712dcf7cc60bca7ec896
 windows/ransomware.yar
   rules 99  files 55  bytes 108743
-  sha256 01ecb1fb490d20bb32fa2e0e18b80a4919e31ae134f7ba0e3066ee2cb2e450bc
+  sha256 016a18a260a69c573f057689514109aaa762fb3f2171f4f63884a9ded9dbd29e
 windows/remoteadmin.yar
   rules 1  files 1  bytes 1472
-  sha256 a8e4faf939360db72983c9a5ee68793ce6e14c9893840e05542e8c27b577fc46
+  sha256 9e823a92682f8af0394fb70b7b928e506a82eec04e5c7cf3f61767a035dd62ed
 windows/rootkit.yar
   rules 100  files 28  bytes 139595
-  sha256 7a982deaf4ace700bc4b1e1bd41e8820bb7a180a0bcdb4f910a7452886324dff
+  sha256 2edc3acdab1f461258a3c9f4affb2af966f4034274512a7e3261eae3896eab5d
 windows/shellcode.yar
   rules 6  files 2  bytes 5148
-  sha256 18cf75bfbb8f98f21c370e5b6ba7f20904fa17ac0d9ba6df25cd786066492e84
+  sha256 b9126567e7c34185f2c1f1814d3c72b137e1192b6929426099b0e3b74fc4187c
 windows/trojan.yar
   rules 513  files 213  bytes 543438
-  sha256 67afa6095e92d5f589aba43bf3835dbc0df45cfafbe2566e8058767de6a6fb1e
+  sha256 5269f579546d984cfd521433872ae5f40d047074a850fdcc6d5496f94e18cec7
 windows/virus.yar
   rules 3  files 3  bytes 3244
-  sha256 1a9cb3b6500d9b53a9331cedc7dd0c550e868a1f697b18978866d5b4f39b5bd7
+  sha256 f3dcef939ae0dd22e8e95250c5287691e6ef544e048075c965aabbed69c3ad88
 windows/vulndriver.yar
   rules 833  files 341  bytes 1319090
-  sha256 83b12e8d40af1fd74c812905124bfe1fba87c78780852b3e172b6d4026b2ef65
+  sha256 2bc1373c6ef894cb0cd810ac124279109fc3342681389e181b49e99e37db24cf
 windows/wiper.yar
   rules 4  files 4  bytes 4719
-  sha256 a69a3fe6d2e3b8e4090a00d52e1166e5b5a05ac609acb822da9c24371376bffc
+  sha256 73aa2ab41cb08d1a21eb6a43628c5217ec4b2d05c2a4460a408787f8bd9fe853
