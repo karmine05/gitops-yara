@@ -4,9 +4,9 @@
  *
  * sigurl:    https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/_all.yar
  * Source:    https://github.com/elastic/protections-artifacts.git
- * Commit:    ce99f77ba7cc2e442589d49e01b9db262d31ae91
- * Generated: 2026-09-28
- * Rules:     2029   Upstream files: 746
+ * Commit:    ccefbba2b6498316f2e62b7675563971b83f8fb2
+ * Generated: 2026-10-05
+ * Rules:     2072   Upstream files: 760
  *
  * Upstream rules are licensed under the Elastic License 2.0.
  * See LICENSE-NOTICE.md. Rules are redistributed unmodified.
@@ -7393,6 +7393,185 @@ rule Windows_Hacktool_ExecuteAssembly_f41f4df6 {
         all of them
 }
 
+// ---- Windows_Hacktool_Generic.yar ----
+rule Windows_Hacktool_Generic_033965e7 {
+    meta:
+        author = "Elastic Security"
+        id = "033965e7-8c71-4a95-bd6c-c68b730d6cd3"
+        fingerprint = "8bff946c35f5d325245313614a1e7911ccba69777316d97487cdc2da0e349e07"
+        creation_date = "2026-09-21"
+        last_modified = "2026-09-28"
+        threat_name = "Windows.Hacktool.Generic"
+        severity = 100
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $s_trampoline = "[DEBUG]Calling WriteProcessMemory to overwrite AddressofEntryPoint at 0x%x with trampoline: 0x%x..."
+        $s_overwrite = "[-]Successfully overwrote the AddressofEntryPoint"
+        $s_machine = "[-]Machine type UNKOWN: 0x%x"
+        $s_resume = "[+]Process resumed and shellcode executed"
+        $s_header = "[-]ReadProcessMemory completed reading %d bytes for IMAGE_OPTIONAL_HEADER"
+    condition:
+        4 of them
+}
+
+rule Windows_Hacktool_Generic_922943d8 {
+    meta:
+        author = "Elastic Security"
+        id = "922943d8-9008-4a3d-9b56-4892636140ec"
+        fingerprint = "c606a76ae0b427bea0eec8e457593a7a694d795773f1af23481ccbfa54b6de82"
+        creation_date = "2026-09-21"
+        last_modified = "2026-09-28"
+        threat_name = "Windows.Hacktool.Generic"
+        severity = 100
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $s_registry = "[+] Looking for the 'Registry Editor' window..." ascii fullword
+        $s_listview = "[+] Looking for the 'SysListView32' window..." ascii fullword
+        $s_terminate = "[+] RegEdit process termination successfull." ascii fullword
+        $s_empty = "[-] List view is empty." ascii fullword
+        $s_alloc = "[+] Allocating memory in the remote process..." ascii fullword
+        $s_post = "[+] Posting message to the target window..." ascii fullword
+    condition:
+        4 of them
+}
+
+rule Windows_Hacktool_Generic_42e0be24 {
+    meta:
+        author = "Elastic Security"
+        id = "42e0be24-b631-4d1a-97d5-a9cee97fbbb3"
+        fingerprint = "59220437136460f030274537d69889928260d9fc7055d1aec14c1795b05a8234"
+        creation_date = "2026-09-21"
+        last_modified = "2026-09-28"
+        threat_name = "Windows.Hacktool.Generic"
+        severity = 100
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $s_load = "[DEBUG]Loading VirtualAlloc, VirtualProtect and RtlCopyMemory procedures"
+        $s_copy = "[DEBUG]Copying shellcode to memory with RtlCopyMemory"
+        $s_protect = "[DEBUG]Calling VirtualProtect to change memory region to PAGE_EXECUTE_READ"
+        $s_decode = "[!]there was an error decoding the string to a hex byte array: %s"
+        $s_done = "[-]Shellcode memory region changed to PAGE_EXECUTE_READ"
+    condition:
+        4 of them
+}
+
+rule Windows_Hacktool_Generic_bafe5bc4 {
+    meta:
+        author = "Elastic Security"
+        id = "bafe5bc4-2216-4319-908b-09373585754f"
+        fingerprint = "55df1ab3fc49b5a674c5b1fdc8b7612b38dcc10ffd01acab4f8245c4131f60d7"
+        creation_date = "2026-09-21"
+        last_modified = "2026-09-28"
+        threat_name = "Windows.Hacktool.Generic"
+        severity = 100
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $seq_1 = { 83 65 FC 00 6A 00 68 80 00 00 00 6A 03 6A 00 6A 01 68 00 00 00 80 FF 75 08 FF 15 08 60 41 00 }
+        $usage = "[ usage: xbin <exe> <section name>" ascii fullword
+        $msg_object = "[ Looks like an object file" ascii fullword
+        $msg_raw = "%8X file pointer to raw data (%08X to %08X)" ascii fullword
+        $msg_nt = "  [ invalid nt header" ascii fullword
+    condition:
+        4 of them
+}
+
+rule Windows_Hacktool_Generic_27dce09e {
+    meta:
+        author = "Elastic Security"
+        id = "27dce09e-c774-4bbd-9b5c-88e6a6bcc668"
+        fingerprint = "9c74c3db517b9aa6482fa7e97114ae69e3107db7f10cd6a38856915fd12dfb60"
+        creation_date = "2026-09-21"
+        last_modified = "2026-09-28"
+        threat_name = "Windows.Hacktool.Generic"
+        severity = 100
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $seq_1 = { 55 89 E5 83 EC 18 C7 44 24 04 01 00 00 00 C7 04 24 00 40 F8 61 A1 0C 71 F8 61 FF D0 83 EC 08 90 C9 }
+        $str_1 = "beerTime"
+    condition:
+        all of them
+}
+
+rule Windows_Hacktool_Generic_5161f303 {
+    meta:
+        author = "Elastic Security"
+        id = "5161f303-7e6c-44d7-8250-a37dc8bf5b91"
+        fingerprint = "c8bc6dbff7f8fd1a97f3a55309a3f53df86691d0eda82f290dc09e4734b50481"
+        creation_date = "2026-09-21"
+        last_modified = "2026-09-28"
+        threat_name = "Windows.Hacktool.Generic"
+        severity = 100
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $str_1 = "Hello From Main...I Don't Do Anything" wide fullword
+        $str_2 = "Hello There From Uninstall" wide fullword
+        $str_3 = "I shouldn't really execute either." wide fullword
+        $str_4 = "Allthingsdll_64.dll" fullword
+    condition:
+        3 of them
+}
+
+rule Windows_Hacktool_Generic_45b88d7a {
+    meta:
+        author = "Elastic Security"
+        id = "45b88d7a-1eb3-41a8-821b-378fe745aa9d"
+        fingerprint = "7ee9fa5ea1f7a33ec44076ba0cc3fb9fae8fc7bb67e12af92ae3f325f63bfed9"
+        creation_date = "2026-09-21"
+        last_modified = "2026-09-28"
+        threat_name = "Windows.Hacktool.Generic"
+        severity = 100
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $str_1 = "C:\\src\\x64\\Release\\AltWinSock2DLL.pdb" wide fullword
+        $seq_1 = { 48 8D 05 B7 61 01 00 48 8B D7 48 89 44 24 28 4C 8D 8D 70 01 00 00 48 8D 45 60 4C 8D 05 B1 61 01 00 48 89 44 24 20 48 8D 4C 24 50 E8 2E 01 00 00 }
+        $seq_2 = { 00 28 06 00 00 06 26 12 00 1D 28 0E 00 00 0A 1F F5 28 04 00 00 06 0B 72 01 00 00 70 28 0F 00 00 0A 00 28 10 00 00 0A 0C 00 08 28 02 00 00 06 28 11 00 00 0A 00 00 DE 11 }
+        $seq_3 = { 48 89 54 24 10 48 89 4C 24 08 48 81 EC F8 00 00 00 48 C7 44 24 28 00 00 00 00 C7 44 24 20 00 00 00 00 45 33 C9 4C 8D 05 74 01 00 00 33 D2 33 C9 FF 15 0A DF 00 00 C7 44 24 30 B8 00 00 00 48 C7 44 24 38 00 00 00 00 48 8D 05 E2 01 00 00 48 89 44 24 40 48 8D 05 F6 01 00 00 48 89 44 24 48 48 8D 05 0A 02 00 00 48 89 44 24 50 48 8D 05 CE FE FF FF 48 89 44 24 58 48 8D 05 E2 FE FF FF 48 89 44 24 60 48 8D 05 06 02 00 00 48 89 44 24 68 48 8D 05 EA FE FF FF 48 89 44 24 70 48 C7 44 24 78 00 00 00 00 48 C7 84 24 80 00 00 00 00 00 00 00 48 C7 84 24 88 00 00 00 00 00 00 00 48 C7 84 24 90 00 00 00 00 00 00 00 48 C7 84 24 98 00 00 00 00 00 00 00 48 C7 84 24 A0 00 00 00 00 00 00 00 48 8D 05 B9 FE FF FF 48 89 84 24 A8 00 00 00 48 8D 05 CA FE FF FF 48 89 84 24 B0 00 00 00 48 8D 05 DB FE FF FF 48 89 84 24 B8 00 00 00 48 8D 05 9C 01 00 00 48 89 84 24 C0 00 00 00 48 C7 84 24 C8 00 00 00 00 00 00 00 48 8D 05 91 01 00 00 48 89 84 24 D0 00 00 00 48 8D 05 A2 01 00 00 48 89 84 24 D8 00 00 00 48 8D 05 B3 01 00 00 48 89 84 24 E0 00 00 00 48 8D 44 24 30 48 81 C4 F8 00 00 00 C3 }
+    condition:
+        1 of them
+}
+
+rule Windows_Hacktool_Generic_bb05d541 {
+    meta:
+        author = "Elastic Security"
+        id = "bb05d541-def6-4921-b3d5-81b1c57a7af0"
+        fingerprint = "ad8f9fe64183880bf471aa162b830c3916417b22eb4fbe572e0b6c85226799e9"
+        creation_date = "2026-09-21"
+        last_modified = "2026-09-28"
+        threat_name = "Windows.Hacktool.Generic"
+        severity = 100
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $str_1 = "wextract.pdb" wide fullword
+        $str_3 = { 4C 8D 05 11 73 00 00 C7 44 24 34 04 01 00 00 48 8D 44 24 40 BA 04 01 00 00 4C 2B C0 48 8D 4C 24 40 }
+        $seq_2 = { 48 8D 44 24 38 41 B9 19 00 02 00 45 33 C0 48 89 44 24 20 48 8D 15 47 22 00 00 }
+    condition:
+        all of them
+}
+
 // ---- Windows_Hacktool_Gmer.yar ----
 rule Windows_Hacktool_Gmer_8aabdd5e {
     meta:
@@ -7465,6 +7644,31 @@ rule Windows_Hacktool_Iox_98cd1cd8 {
         $param_check_b1 = { 48 8B 14 24 4C 8B 5C 24 18 4C 8B 64 24 08 4C 8B 6C 24 08 4C 8B 7C 24 20 66 0F 1F 84 00 00 00 00 00 48 83 FB 03 0F 85 ?? ?? ?? ?? 66 81 38 66 77 0F 85 ?? ?? ?? ?? 80 78 02 64 }
         $param_check_b2 = { 81 38 2D 2D 6C 6F 0F 1F 44 00 00 0F 85 ?? ?? ?? ?? 66 81 78 04 63 61 0F 85 ?? ?? ?? ?? 80 78 06 6C }
         $param_check_b3 = { 83 FA 05 0F 85 ?? ?? ?? ?? 81 38 2D 2D 6B 65 0F 85 ?? ?? ?? ?? 80 78 04 79 90 }
+    condition:
+        3 of them
+}
+
+// ---- Windows_Hacktool_Kerbrute.yar ----
+rule Windows_Hacktool_Kerbrute_f73e1182 {
+    meta:
+        author = "Elastic Security"
+        id = "f73e1182-24d8-459a-b843-d91987587e8c"
+        fingerprint = "2279b5accd20b06fce70b87a39576fc2ebbac74934a5846155295ae0be18b9cd"
+        creation_date = "2026-09-21"
+        last_modified = "2026-09-28"
+        threat_name = "Windows.Hacktool.Kerbrute"
+        severity = 100
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $sym_session = "github.com/ropnop/kerbrute/session.KerbruteSession.TestUsername" ascii fullword
+        $sym_worker = "github.com/ropnop/kerbrute/cmd.makeSprayWorker" ascii fullword
+        $sym_enum_worker = "github.com/ropnop/kerbrute/cmd.makeEnumWorker" ascii fullword
+        $bruteforce_str = "bruteForceCombos"
+        $msg_user = "[+] VALID USERNAME:\t %s"
+        $msg_enum = "userenum [flags] <username_wordlist>"
     condition:
         3 of them
 }
@@ -8424,6 +8628,30 @@ rule Windows_Hacktool_SleepObfLoader_460a1a75 {
         $c = { 8B 46 FB 41 89 40 18 0F B7 46 FF 66 41 89 40 1C 8A 46 01 41 88 40 1E }
     condition:
         all of them
+}
+
+// ---- Windows_Hacktool_WebBrowserPassView.yar ----
+rule Windows_Hacktool_WebBrowserPassView_ddbe01d9 {
+    meta:
+        author = "Elastic Security"
+        id = "ddbe01d9-4f1f-4ff4-b71c-654b40e3c37f"
+        fingerprint = "dbc41fc8098c372002970a6ff937b199917729c0e41510affd7e56cd6177cd10"
+        creation_date = "2026-09-21"
+        last_modified = "2026-09-28"
+        threat_name = "Windows.Hacktool.WebBrowserPassView"
+        severity = 100
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $s_title = "Web Browser Password Viewer" wide fullword
+        $s_chrome = "Choose another profile of Chrome Web browser" wide fullword
+        $s_opera = "Choose the password file of Opera (wand.dat)" wide fullword
+        $s_load = "Load Passwords From..." wide fullword
+        $s_passwords = "%d Passwords" wide fullword
+    condition:
+        3 of them
 }
 
 // ---- Windows_Hacktool_WinPEAS_ng.yar ----
@@ -12493,6 +12721,74 @@ rule Windows_Rootkit_Generic_23507a9c {
     strings:
         $subject_name = { 06 03 55 04 03 [2] 4D 69 63 72 6F 73 6F 66 74 20 57 69 6E 64 6F 77 73 20 48 61 72 64 77 61 72 65 20 43 6F 6D 70 61 74 69 62 69 6C 69 74 79 20 50 75 62 6C 69 73 68 65 72 }
         $str1 = "\\code\\[2-5]fileopr\\objfre_win7_amd64\\amd64\\MyDriver.pdb"
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $str1
+}
+
+rule Windows_Rootkit_Generic_dc6bcaa0 {
+    meta:
+        author = "Elastic Security"
+        id = "dc6bcaa0-8ba7-4caa-959b-e6a056fe9dfa"
+        fingerprint = "ad8e49cc3bfab16d31841c6c11aa4a70733bdcf3adb7d8d4936ce501696ac1a3"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: Microsoft Windows Hardware Compatibility Publisher, Version: <= 1.5026.1000.127"
+        threat_name = "Windows.Rootkit.Generic"
+        reference_sample = "962fb670510807fd5cab3a6e6f886aeb2b925c42054c29fa02f67011be935954"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 4D 69 63 72 6F 73 6F 66 74 20 57 69 6E 64 6F 77 73 20 48 61 72 64 77 61 72 65 20 43 6F 6D 70 61 74 69 62 69 6C 69 74 79 20 50 75 62 6C 69 73 68 65 72 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x00][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|([\x00-\xff][\x00-\x00]|[\x00-\xff][\x01-\x12]|[\x00-\xa1][\x13-\x13])[\x01-\x01][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\xa2-\xa2][\x13-\x13][\x01-\x01][\x00-\x00][\x00-\xff][\x00-\xff]([\x00-\xff][\x00-\x00]|[\x00-\xff][\x01-\x02]|[\x00-\xe7][\x03-\x03])|[\xa2-\xa2][\x13-\x13][\x01-\x01][\x00-\x00][\x00-\x7e][\x00-\x00][\xe8-\xe8][\x03-\x03]|[\xa2-\xa2][\x13-\x13][\x01-\x01][\x00-\x00][\x7f-\x7f][\x00-\x00][\xe8-\xe8][\x03-\x03])/
+        $str1 = "kernel_utility_driver_mt32.pdb"
+        $str2 = "kernel_utility_driver_mt64.pdb"
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and $subject_name and $version and ($str1 or $str2)
+}
+
+rule Windows_Rootkit_Generic_ab0bf259 {
+    meta:
+        author = "Elastic Security"
+        id = "ab0bf259-f1bb-40ba-9899-633f369871ca"
+        fingerprint = "48e5d1c90ec943d587883c4f1b131135dec4a20dd9798b6fa0e2d94dabc79e63"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: Microsoft Windows Hardware Compatibility Publisher"
+        threat_name = "Windows.Rootkit.Generic"
+        reference_sample = "00833dd6f61e768ec3cfdf2bdc5ef074df07f2df8921558e4c5e5a32e97b4080"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 4D 69 63 72 6F 73 6F 66 74 20 57 69 6E 64 6F 77 73 20 48 61 72 64 77 61 72 65 20 43 6F 6D 70 61 74 69 62 69 6C 69 74 79 20 50 75 62 6C 69 73 68 65 72 }
+        $str1 = "MsLoad.pdb"
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $str1
+}
+
+rule Windows_Rootkit_Generic_a603e6d2 {
+    meta:
+        author = "Elastic Security"
+        id = "a603e6d2-bde1-408c-997e-d915a54cd0eb"
+        fingerprint = "e2d4c8dcfbaadebb3d015aa6fb749693c4770775bc8a4315454ba3f3c5149766"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: Microsoft Windows Hardware Compatibility Publisher"
+        threat_name = "Windows.Rootkit.Generic"
+        reference_sample = "72bd55f4459c992b9caa1a33cb6862f1f3085ca35839c58dee8b75db22ca605f"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 4D 69 63 72 6F 73 6F 66 74 20 57 69 6E 64 6F 77 73 20 48 61 72 64 77 61 72 65 20 43 6F 6D 70 61 74 69 62 69 6C 69 74 79 20 50 75 62 6C 69 73 68 65 72 }
+        $str1 = "ioctl-km.pdb"
     condition:
         int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $str1
 }
@@ -19886,6 +20182,132 @@ rule Windows_Trojan_KoiLoader_1131bc57 {
         3 of them
 }
 
+// ---- Windows_Trojan_Kremlin.yar ----
+rule Windows_Trojan_Kremlin_d15eb999 {
+    meta:
+        author = "Elastic Security"
+        id = "d15eb999-819a-4315-b51b-e1bbe1dfb873"
+        fingerprint = "3d81db124feed487d5cec23e01317e56d6268659b7616d0a4569bee3250d54e2"
+        creation_date = "2026-09-11"
+        last_modified = "2026-09-25"
+        threat_name = "Windows.Trojan.Kremlin"
+        reference_sample = "8f7d67c51cf8388b6e01526984952fb58bad47dd511d02bf7f73cd4846f84274"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $a0 = { BA 90 5F 01 00 48 8B C8 FF 15 [4] 44 89 75 C7 85 C0 }
+        $a1 = { 48 8B 94 24 [4] 48 2B 94 24 [4] 48 83 C2 1F }
+        $a2 = { B8 40 77 1B 00 48 2B C6 48 3B C1 48 0F 42 C8 }
+        $a3 = { 48 3D FE 0B 00 00 76 12 E8 }
+        $b0 = "[EXT] failed to calculate extension id"
+        $b1 = "[BROWSER] Extracting ext into %s"
+    condition:
+        4 of them
+}
+
+rule Windows_Trojan_Kremlin_35be03d1 {
+    meta:
+        author = "Elastic Security"
+        id = "35be03d1-b1e2-4bba-8475-2315e72058a1"
+        fingerprint = "ea382a0c50a208b9db65dd345a81999f435ec02946639a4fa19afdfe5e65cff9"
+        creation_date = "2026-09-11"
+        last_modified = "2026-09-25"
+        threat_name = "Windows.Trojan.Kremlin"
+        reference_sample = "1a2e65ff3e5b00b167af07b2797719c822efbaeff6fca2fec8b0b5b9a1f33734"
+        severity = 100
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $a0 = { BA 90 5F 01 00 48 8B 4C 24 40 FF 15 [4] 89 44 24 3C }
+        $a1 = { 0F B6 C0 85 C0 75 ?? 48 8D 8C 24 [9] 48 83 F8 02 74 }
+        $a2 = { 89 44 24 68 83 7C 24 68 00 7C ?? 48 8D 8C 24 [9] 8B 8C 24 E0 02 00 00 48 3B C8 76 }
+        $a3 = { BA 40 77 1B 00 B9 C0 D4 01 00 E8 }
+        $a4 = { 48 81 7C 24 ?? FE 0B 00 00 76 12 E8 }
+        $b0 = "[EXT] failed to download extension from remote host"
+        $b1 = "[BROWSER] Extension fully extracted to '%s'"
+    condition:
+        3 of them
+}
+
+rule Windows_Trojan_Kremlin_dd4e05d3 {
+    meta:
+        author = "Elastic Security"
+        id = "dd4e05d3-e8a6-419b-894f-d66e8976b5f4"
+        fingerprint = "00bab956d7afad787e0c90997bfa0e4d39356c388501ece40814baa03f6576ea"
+        creation_date = "2026-09-11"
+        last_modified = "2026-09-25"
+        threat_name = "Windows.Trojan.Kremlin"
+        reference_sample = "17c60e17d75348b055687d1ad4f66c8b12f593f68952b6de5ab181c2b7905a6c"
+        severity = 100
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $a0 = { 83 7C 24 38 00 74 ?? 83 7C 24 38 02 74 ?? 44 8B 4C 24 38 }
+        $a1 = { 85 FF 74 27 83 FF 02 74 22 44 8B CF }
+        $a2 = { 83 7C 24 50 00 0F 84 [4] 83 BC 24 18 48 00 00 00 0F 85 }
+        $a3 = { 81 7C 24 74 90 00 00 00 0F 8C }
+        $a4 = { 8B 00 89 44 24 6C 81 7C 24 6C 90 00 00 00 0F 8C }
+        $b0 = "[BROWSER] Failed to extract to file"
+        $b1 = "[BROWSER] Failed to init Miniz"
+    condition:
+        3 of them
+}
+
+rule Windows_Trojan_Kremlin_50d5b6d2 {
+    meta:
+        author = "Elastic Security"
+        id = "50d5b6d2-230f-413b-81db-adf019770feb"
+        fingerprint = "d0c3e59d57e1da50e9e77dc27d333dae4644d01315758cafeb5e8962490dc9ef"
+        creation_date = "2026-09-11"
+        last_modified = "2026-09-25"
+        threat_name = "Windows.Trojan.Kremlin"
+        reference_sample = "0553ef3338bf99f17c185706381ee546989fc2dedae627ef222b3d50befbe9d5"
+        severity = 100
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $a0 = { 48 85 C0 74 2E 48 8D 94 24 [4] 48 8D 8C 24 A0 13 00 00 E8 [4] 85 C0 74 15 }
+        $a1 = { 48 85 C0 74 2E 48 8D 94 24 [4] 48 8D 8C 24 F0 05 00 00 E8 [4] 85 C0 74 15 }
+        $a2 = { 48 85 C0 74 30 48 8D 94 24 [4] 48 8D 8C 24 F0 05 00 00 E8 [4] 85 C0 74 17 }
+        $a3 = { 83 7C 24 58 00 75 2F 48 8D 94 24 [4] 48 8D 8C 24 50 0D 00 00 E8 [4] 48 8B C8 E8 [4] 89 44 24 58 }
+        $a4 = { 0F B6 C0 85 C0 74 15 48 8D 8C 24 48 08 00 00 E8 [4] C7 44 24 38 01 00 00 00 }
+        $a5 = { 0F B6 C0 85 C0 74 15 48 8D 8C 24 C0 06 00 00 E8 [4] C7 44 24 30 01 00 00 00 }
+        $a6 = { 83 7C 24 48 00 74 ?? 83 7C 24 48 02 74 ?? 44 8B 4C 24 48 }
+        $a7 = { 83 7C 24 5C 00 0F 84 [4] 83 BC 24 C0 18 00 00 00 0F 85 }
+    condition:
+        2 of them
+}
+
+rule Windows_Trojan_Kremlin_c241b245 {
+    meta:
+        author = "Elastic Security"
+        id = "c241b245-2d29-4f8e-a8f0-cc4b252414e7"
+        fingerprint = "d26cf2b8a4697669bbf740458e10e9212bd9efadf9f075ad2d56c0645b57c7aa"
+        creation_date = "2026-09-11"
+        last_modified = "2026-09-25"
+        threat_name = "Windows.Trojan.Kremlin"
+        reference_sample = "4f48cb6909213f851ac99074815b0be7ad746efff9dfb2c579fc8426397eae57"
+        severity = 100
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $a0 = { 48 85 C0 0F 84 [4] 48 8D 95 78 03 00 00 48 8D 8D F8 03 00 00 E8 [4] 85 C0 0F 84 }
+        $a1 = { 39 7D B0 75 ?? 48 8D 95 18 04 00 00 48 8D 8D 60 07 00 00 E8 [4] 48 8B C8 E8 }
+    condition:
+        all of them
+}
+
 // ---- Windows_Trojan_Kronos.yar ----
 rule Windows_Trojan_Kronos_cdd2e2c5 {
     meta:
@@ -22920,6 +23342,28 @@ rule Windows_Trojan_RevStealer_295fca7e {
         $b = { 41 0F B7 04 09 FF C2 66 89 01 49 FF C3 48 83 C1 02 4D 3B DA }
     condition:
         any of them
+}
+
+rule Windows_Trojan_RevStealer_bbf066be {
+    meta:
+        author = "Elastic Security"
+        id = "bbf066be-39a7-4a2f-bc79-fab728c66052"
+        fingerprint = "c7a6a9c9c9bf4881e214b9e3d86785b8ce66efd8fa78d1716c745226f55a05bb"
+        creation_date = "2026-09-08"
+        last_modified = "2026-09-25"
+        description = "Identifies LockAppHost module"
+        threat_name = "Windows.Trojan.RevStealer"
+        reference_sample = "10d2e914f92729f8f12bf871a2e238aecd28e57dc8be60a2aa58f3aad464b675"
+        severity = 100
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $a = { 41 FE C1 45 0F B6 C1 42 8A 14 04 44 02 D2 41 0F B6 CA 8A 04 0C 42 88 04 04 88 14 0C 49 83 EB 01 }
+        $b = { 48 FF C0 48 89 44 24 ?? ?? ?? FF FF FF 33 C0 48 8B 4C 24 40 48 8B 54 24 48 66 89 44 51 FE 48 83 C4 38 C3 }
+    condition:
+        all of them
 }
 
 // ---- Windows_Trojan_Revcoderat.yar ----
@@ -27362,6 +27806,31 @@ rule Windows_VulnDriver_AgileRiskManagement_66938a5b {
         int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $str1
 }
 
+// ---- Windows_VulnDriver_Alinubx.yar ----
+rule Windows_VulnDriver_Alinubx_fa517f3c {
+    meta:
+        author = "Elastic Security"
+        id = "fa517f3c-1989-4f66-9fd0-aad7fe59856b"
+        fingerprint = "00ef420e1f3e40fbaf1140ede75e44d4f8ee9eb9725b83b8b0886cc769ad146c"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Name: Alinubx.sys, Version: <= 1.3.2.1"
+        threat_name = "Windows.VulnDriver.Alinubx"
+        reference_sample = "3983e99d8e707782aaf34c7e2d71d998be4d53b340492b8cf579b9ced5c3678f"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 41 00 6C 00 69 00 6E 00 75 00 62 00 78 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x00][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x02][\x00-\x00][\x01-\x01][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x03-\x03][\x00-\x00][\x01-\x01][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\x01][\x00-\x00]|[\x03-\x03][\x00-\x00][\x01-\x01][\x00-\x00][\x00-\x00][\x00-\x00][\x02-\x02][\x00-\x00]|[\x03-\x03][\x00-\x00][\x01-\x01][\x00-\x00][\x01-\x01][\x00-\x00][\x02-\x02][\x00-\x00])/
+        $str1 = "Alinubx.pdb"
+        $str2 = "Alinubx Driver" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $original_file_name and $version and $str1 and $str2
+}
+
 // ---- Windows_VulnDriver_Amdi2c.yar ----
 rule Windows_VulnDriver_Amdi2c_3a48edc9 {
     meta:
@@ -29104,6 +29573,56 @@ rule Windows_VulnDriver_Asus_8f771a35 {
         $str1 = "D:\\BIOS\\Projects\\AsusBiosTools\\Driver\\AsusBiosIo\\x64\\Release\\AsusBiosIoDrv.pdb"
     condition:
         int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $str1
+}
+
+rule Windows_VulnDriver_Asus_d949aa4d {
+    meta:
+        author = "Elastic Security"
+        id = "d949aa4d-6226-4b35-896d-a05170f127de"
+        fingerprint = "47721bde3f89fbbc4e554d5ec55ba9102cf63728ec93e6d57428f6e77107309d"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: ASUSTek Computer Inc., Version: <= 1.0.1.0"
+        threat_name = "Windows.VulnDriver.Asus"
+        reference_sample = "2d1c04a9ee1664c25574048363620800482a89e1c99f4338dc252038aa949419"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 41 53 55 53 54 65 6B 20 43 6F 6D 70 75 74 65 72 20 49 6E 63 2E }
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 41 00 53 00 55 00 53 00 53 00 41 00 49 00 4F 00 28 00 61 00 73 00 75 00 73 00 31 00 30 00 30 00 30 00 29 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x00][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x00][\x00-\x00][\x01-\x01][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\x00][\x00-\x00]|[\x00-\x00][\x00-\x00][\x01-\x01][\x00-\x00][\x00-\x00][\x00-\x00][\x01-\x01][\x00-\x00])/
+        $str1 = "ASUSSAIO.pdb"
+        $str2 = "ASUSSAIO(asus1000)" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2
+}
+
+rule Windows_VulnDriver_Asus_42e355ef {
+    meta:
+        author = "Elastic Security"
+        id = "42e355ef-71fe-4a67-9a1e-0d0db41168b1"
+        fingerprint = "1ee946b9ecedc1ff2524a77bbf8ce878c7f466b9bf6ec6ab953cc62efbf79be4"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: ASUSTeK COMPUTER INC., Version: <= 3.2.12.0"
+        threat_name = "Windows.VulnDriver.Asus"
+        reference_sample = "c82377f2c1b75afd1503bb494e1b23fc45a4a6b81c7678e4e6cf391ce023ccbb"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 41 53 55 53 54 65 4B 20 43 4F 4D 50 55 54 45 52 20 49 4E 43 2E }
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 41 00 73 00 75 00 73 00 42 00 53 00 49 00 74 00 66 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x02][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x01][\x00-\x00][\x03-\x03][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x02-\x02][\x00-\x00][\x03-\x03][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\x0b][\x00-\x00]|[\x02-\x02][\x00-\x00][\x03-\x03][\x00-\x00][\x00-\x00][\x00-\x00][\x0c-\x0c][\x00-\x00])/
+        $str1 = "AsusBSItf.pdb"
+        $str2 = "ASUS BIOS Flash Driver" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2
 }
 
 // ---- Windows_VulnDriver_Atera.yar ----
@@ -33239,6 +33758,32 @@ rule Windows_VulnDriver_EnPortv_ae757d45 {
         int16(uint32(0x3C) + 0x5c) == 0x0001 and $original_file_name and $version and $str1 and $str2
 }
 
+rule Windows_VulnDriver_EnPortv_ed8dacce {
+    meta:
+        author = "Elastic Security"
+        id = "ed8dacce-351d-4f3e-8b34-18369a64720b"
+        fingerprint = "454bb4753f10ec03e6942fdad2534c57ef29d76740a3d5764496bb0f426ecc27"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: Opentext Corporation, Version: <= 1.60.0.0"
+        threat_name = "Windows.VulnDriver.EnPortv"
+        reference_sample = "fb0174356f4155e3348199dac7532c5e4b72bf70bbf9853c75c86795d699d5ed"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 4F 70 65 6E 74 65 78 74 20 43 6F 72 70 6F 72 61 74 69 6F 6E }
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 45 00 6E 00 50 00 6F 00 72 00 74 00 76 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x00][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x3b][\x00-\x00][\x01-\x01][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x3c-\x3c][\x00-\x00][\x01-\x01][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00])/
+        $str1 = "enport.pdb"
+        $str2 = "EnCase Driver" wide
+        $str3 = "EnCase Driver for DDK_TARGET_OS 64 bit Svn Rev:SVN_REV_INFO with EnCase 21.1.0.22" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2 and $str3
+}
+
 // ---- Windows_VulnDriver_EnTech.yar ----
 rule Windows_VulnDriver_EnTech_23ff2cf7 {
     meta:
@@ -33512,6 +34057,60 @@ rule Windows_VulnDriver_FeatureIntegration_8b25e126 {
         $str3 = "FINTEK PCIECOM Adapter" wide
     condition:
         int16(uint32(0x3C) + 0x5c) == 0x0001 and $subject_name and $original_file_name and $version and $str1 and $str2 and $str3
+}
+
+rule Windows_VulnDriver_FeatureIntegration_455b7b42 {
+    meta:
+        author = "Elastic Security"
+        id = "455b7b42-a688-45ce-9e7f-598b9fd32d0a"
+        fingerprint = "aa71584e4f4800c1343ebb176c24a1c6552f3587e20e7c440467b6656647038a"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: Feature Integration Technology Inc, Version: <= 17.9.27.1"
+        threat_name = "Windows.VulnDriver.FeatureIntegration"
+        reference_sample = "faa7aaec1df5ef6b43d45a9f465a09c3a7fd0264f1e77415a63f9d1ea3dfaa34"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 46 65 61 74 75 72 65 20 49 6E 74 65 67 72 61 74 69 6F 6E 20 54 65 63 68 6E 6F 6C 6F 67 79 20 49 6E 63 }
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 46 00 50 00 43 00 49 00 45 00 32 00 43 00 4F 00 4D 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x10][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x08][\x00-\x00][\x11-\x11][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x09-\x09][\x00-\x00][\x11-\x11][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\x1a][\x00-\x00]|[\x09-\x09][\x00-\x00][\x11-\x11][\x00-\x00][\x00-\x00][\x00-\x00][\x1b-\x1b][\x00-\x00]|[\x09-\x09][\x00-\x00][\x11-\x11][\x00-\x00][\x01-\x01][\x00-\x00][\x1b-\x1b][\x00-\x00])/
+        $str1 = "FPCIE2COM.pdb"
+        $str2 = "FINTEK PCIECOM " wide
+        $str3 = "FINTEK PCIECOM Adapter" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2 and $str3
+}
+
+// ---- Windows_VulnDriver_Fekern.yar ----
+rule Windows_VulnDriver_Fekern_7b7240f3 {
+    meta:
+        author = "Elastic Security"
+        id = "7b7240f3-7e76-4b16-b5b8-34b5b1de31cc"
+        fingerprint = "8ec69b50535e057f8a1bbfb9b2c3702d18ccfc426d2bf764956797a2ac39902b"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: Microsoft Windows Hardware Compatibility Publisher, Version: <= 34.8.0.0"
+        threat_name = "Windows.VulnDriver.Fekern"
+        reference_sample = "16f68c6e527aacd803cb2412766f00766527e1c880ed8da50bfedac501918320"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 4D 69 63 72 6F 73 6F 66 74 20 57 69 6E 64 6F 77 73 20 48 61 72 64 77 61 72 65 20 43 6F 6D 70 61 74 69 62 69 6C 69 74 79 20 50 75 62 6C 69 73 68 65 72 }
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 66 00 65 00 6B 00 65 00 72 00 6E 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x21][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x07][\x00-\x00][\x22-\x22][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x08-\x08][\x00-\x00][\x22-\x22][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00])/
+        $str1 = "fekern.pdb"
+        $str2 = "IOCTL_READ_PHYSICALMEMORY"
+        $str3 = "IOCTL_COLLECTION_GETDATA"
+        $str4 = "FireEye Realtime Driver" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2 and $str3 and $str4
 }
 
 // ---- Windows_VulnDriver_FidDrv.yar ----
@@ -35063,6 +35662,61 @@ rule Windows_VulnDriver_HardwareMonX86_6844720d {
         int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2
 }
 
+// ---- Windows_VulnDriver_Hax.yar ----
+rule Windows_VulnDriver_Hax_82db9472 {
+    meta:
+        author = "Elastic Security"
+        id = "82db9472-9ed6-4176-80d2-906764d60215"
+        fingerprint = "295d16860dbc0888f657cc4897cde09f59aa0ad0feb64c51483c661e24403d23"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: Microsoft Windows Hardware Compatibility Publisher, Version: <= 7.6.5.3"
+        threat_name = "Windows.VulnDriver.Hax"
+        reference_sample = "6272aa047c054424f30f09b9ffbc543f4084fa4ac878c7b90d29fbc0502e0e33"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 4D 69 63 72 6F 73 6F 66 74 20 57 69 6E 64 6F 77 73 20 48 61 72 64 77 61 72 65 20 43 6F 6D 70 61 74 69 62 69 6C 69 74 79 20 50 75 62 6C 69 73 68 65 72 }
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 68 00 61 00 78 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x06][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x05][\x00-\x00][\x07-\x07][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x06-\x06][\x00-\x00][\x07-\x07][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\x04][\x00-\x00]|[\x06-\x06][\x00-\x00][\x07-\x07][\x00-\x00][\x00-\x02][\x00-\x00][\x05-\x05][\x00-\x00]|[\x06-\x06][\x00-\x00][\x07-\x07][\x00-\x00][\x03-\x03][\x00-\x00][\x05-\x05][\x00-\x00])/
+        $str1 = "GoogleHaxm.pdb"
+        $str2 = "IOCTL_ADD_RAMBLOCK"
+        $str3 = "IOCTL_PROTECT_RAM"
+        $str4 = "HAXM_Driver" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2 and $str3 and $str4
+}
+
+rule Windows_VulnDriver_Hax_804523ba {
+    meta:
+        author = "Elastic Security"
+        id = "804523ba-6d95-44cb-957f-120b3fe2be79"
+        fingerprint = "b349764241570bc98b0c8a5c3f7c5e5f083a991f5a9db6a7be795a57e9b21b37"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: Microsoft Windows Hardware Compatibility Publisher, Version: <= 7.7.0.0"
+        threat_name = "Windows.VulnDriver.Hax"
+        reference_sample = "e6d2868eeaaf315c4f022844a2fe55dff7f76445c057b3057024e6fd3365d020"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 4D 69 63 72 6F 73 6F 66 74 20 57 69 6E 64 6F 77 73 20 48 61 72 64 77 61 72 65 20 43 6F 6D 70 61 74 69 62 69 6C 69 74 79 20 50 75 62 6C 69 73 68 65 72 }
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 68 00 61 00 78 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x06][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x06][\x00-\x00][\x07-\x07][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x07-\x07][\x00-\x00][\x07-\x07][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00])/
+        $str1 = "IntelHaxm.pdb"
+        $str2 = "IOCTL_ADD_RAMBLOCK"
+        $str3 = "IOCTL_PROTECT_RAM"
+        $str4 = "HAXM_Driver" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2 and $str3 and $str4
+}
+
 // ---- Windows_VulnDriver_HpPortIo.yar ----
 rule Windows_VulnDriver_HpPortIo_b31e3473 {
     meta:
@@ -35084,6 +35738,32 @@ rule Windows_VulnDriver_HpPortIo_b31e3473 {
         $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}(([\x00-\x02][\x00-\x00])([\x00-\x01][\x00-\x00])([\x00-\x09][\x00-\x00])([\x00-\x00][\x00-\x00])|([\x00-\xff][\x00-\xff])([\x00-\x00][\x00-\x00])([\x00-\xff][\x00-\xff])([\x00-\xff][\x00-\xff])|([\x00-\x01][\x00-\x00])([\x00-\x01][\x00-\x00])([\x00-\xff][\x00-\xff])([\x00-\xff][\x00-\xff]))/
     condition:
         int16(uint32(0x3C) + 0x5c) == 0x0001 and $original_file_name and $version
+}
+
+// ---- Windows_VulnDriver_HpSwToolsDriver.yar ----
+rule Windows_VulnDriver_HpSwToolsDriver_bec9be61 {
+    meta:
+        author = "Elastic Security"
+        id = "bec9be61-a115-4fcd-bb58-b7b7461ecaf8"
+        fingerprint = "3e76471a43e893a96968ecd9e67e6225a46f4ab24ee92e0152052380e4ac2d10"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: Microsoft Windows Hardware Compatibility Publisher, Version: <= 1.5.0.0"
+        threat_name = "Windows.VulnDriver.HpSwToolsDriver"
+        reference_sample = "bf07c46effde8b6b0fd3c9586a5a9636800fb37418c1e8e606c67cb613cbf832"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 4D 69 63 72 6F 73 6F 66 74 20 57 69 6E 64 6F 77 73 20 48 61 72 64 77 61 72 65 20 43 6F 6D 70 61 74 69 62 69 6C 69 74 79 20 50 75 62 6C 69 73 68 65 72 }
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 48 00 50 00 20 00 53 00 57 00 20 00 54 00 4F 00 4F 00 4C 00 53 00 20 00 44 00 52 00 49 00 56 00 45 00 52 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x00][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x04][\x00-\x00][\x01-\x01][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x05-\x05][\x00-\x00][\x01-\x01][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00])/
+        $str1 = "swtoolsdriver.pdb"
+        $str2 = "HP SW TOOLS DRIVER" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2
 }
 
 // ---- Windows_VulnDriver_HrSword.yar ----
@@ -37784,6 +38464,31 @@ rule Windows_VulnDriver_Ktapi_dbca1325 {
         int16(uint32(0x3C) + 0x5c) == 0x0001 and $subject_name and $original_file_name and $version and $str1 and $str2 and $str3
 }
 
+rule Windows_VulnDriver_Ktapi_e1ed9748 {
+    meta:
+        author = "Elastic Security"
+        id = "e1ed9748-69b2-47a2-93ba-626a752ad21f"
+        fingerprint = "31146801373cb9b4ec5666de0f4a5c03e2266381dd8b036cb0bd8bc86efceafb"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Name: ktapi.sys, Version: <= 1.0.1899.0"
+        threat_name = "Windows.VulnDriver.Ktapi"
+        reference_sample = "5e55d3f204844c2e991263e6fc7d87bd6920dbcdb8f5df68fa79694c1e76045c"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 6B 00 74 00 61 00 70 00 69 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x00][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x00][\x00-\x00][\x01-\x01][\x00-\x00][\x00-\xff][\x00-\xff]([\x00-\xff][\x00-\x00]|[\x00-\xff][\x01-\x06]|[\x00-\x6a][\x07-\x07])|[\x00-\x00][\x00-\x00][\x01-\x01][\x00-\x00][\x00-\x00][\x00-\x00][\x6b-\x6b][\x07-\x07])/
+        $str1 = "ktapi.pdb"
+        $str2 = "KTAPI System Driver" wide
+        $str3 = "Kontron Technology Application Programming Interface" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $original_file_name and $version and $str1 and $str2 and $str3
+}
+
 // ---- Windows_VulnDriver_LDiagIOLegacy.yar ----
 rule Windows_VulnDriver_LDiagIOLegacy_4059aeeb {
     meta:
@@ -38131,6 +38836,31 @@ rule Windows_VulnDriver_Lenovo_ed6235a3 {
         $str3 = "IOCTL_WORKLOCK_NTLKE"
     condition:
         int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $str1 and $str2 and $str3
+}
+
+rule Windows_VulnDriver_Lenovo_e92bb145 {
+    meta:
+        author = "Elastic Security"
+        id = "e92bb145-057e-4457-aa01-189308f32b82"
+        fingerprint = "582e01816d6f1f764d429768d3e92161e9c7415395a051e0505e6f6bc300679b"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: Microsoft Windows Hardware Compatibility Publisher, Version: <= 3.1.0.0"
+        threat_name = "Windows.VulnDriver.Lenovo"
+        reference_sample = "dc5bae2e403e639ef2ebab4c85b827f75853ed6cfbd122a847784f3d49a79e51"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 4D 69 63 72 6F 73 6F 66 74 20 57 69 6E 64 6F 77 73 20 48 61 72 64 77 61 72 65 20 43 6F 6D 70 61 74 69 62 69 6C 69 74 79 20 50 75 62 6C 69 73 68 65 72 }
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 4C 00 65 00 6E 00 6F 00 76 00 6F 00 44 00 69 00 61 00 67 00 6E 00 6F 00 73 00 74 00 69 00 63 00 73 00 44 00 72 00 69 00 76 00 65 00 72 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x02][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x00][\x00-\x00][\x03-\x03][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x01-\x01][\x00-\x00][\x03-\x03][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00])/
+        $str1 = "Lenovo Diagnostics" wide
+        $str2 = "Lenovo Diagnostics Driver for Windows 10 and later." wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2
 }
 
 // ---- Windows_VulnDriver_LenovoDiag.yar ----
@@ -38999,6 +39729,30 @@ rule Windows_VulnDriver_MonProcess_ab56d470 {
         $str2 = "MonProcess" wide
     condition:
         int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2
+}
+
+rule Windows_VulnDriver_MonProcess_00862dde {
+    meta:
+        author = "Elastic Security"
+        id = "00862dde-b362-429b-af1f-019a7910cd43"
+        fingerprint = "3a2b1e8cfc2f33b60479db1e87b3ebb2674ab8c0ffb81d72b2c7db859ceb99b7"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Name: MonProcess.sys, Version: <= 1.0.0.1"
+        threat_name = "Windows.VulnDriver.MonProcess"
+        reference_sample = "fc889ae9d7fd2c6e94891d4c805207a441d34e590bd430483dff08314c38070d"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 4D 00 6F 00 6E 00 50 00 72 00 6F 00 63 00 65 00 73 00 73 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x00][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x00][\x00-\x00][\x01-\x01][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00]|[\x00-\x00][\x00-\x00][\x01-\x01][\x00-\x00][\x01-\x01][\x00-\x00][\x00-\x00][\x00-\x00])/
+        $str1 = "MonProcessEX.pdb"
+        $str2 = "MonProcess" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $original_file_name and $version and $str1 and $str2
 }
 
 // ---- Windows_VulnDriver_Moyea.yar ----
@@ -41495,6 +42249,33 @@ rule Windows_VulnDriver_ProxyDrv_262c87e7 {
         int16(uint32(0x3C) + 0x5c) == 0x0001 and $subject_name and $original_file_name and $version and $str1 and $str2
 }
 
+// ---- Windows_VulnDriver_Pskmad64.yar ----
+rule Windows_VulnDriver_Pskmad64_bd9fa565 {
+    meta:
+        author = "Elastic Security"
+        id = "bd9fa565-e06d-44c4-834f-5075ccc98f80"
+        fingerprint = "64d37374dfe12f6dd860b14b344981f1ec5319fe5a3aa303b49e10c847dceaa3"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: Panda Security S.L., Version: <= 1.0.0.17"
+        threat_name = "Windows.VulnDriver.Pskmad64"
+        reference_sample = "7f9a397038732678c52a73e5e2238ab3619e3c1fcb2ce41efc8e5bd38d77f83e"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 50 61 6E 64 61 20 53 65 63 75 72 69 74 79 20 53 2E 4C 2E }
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 50 00 53 00 4B 00 4D 00 41 00 44 00 5F 00 36 00 34 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x00][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x00][\x00-\x00][\x01-\x01][\x00-\x00][\x00-\x10][\x00-\x00][\x00-\x00][\x00-\x00]|[\x00-\x00][\x00-\x00][\x01-\x01][\x00-\x00][\x11-\x11][\x00-\x00][\x00-\x00][\x00-\x00])/
+        $str1 = "pskmad.pdb"
+        $str2 = "Panda Technologies" wide
+        $str3 = "Panda Kernel Memory Access Driver (x64)" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2 and $str3
+}
+
 // ---- Windows_VulnDriver_Psmounterex.yar ----
 rule Windows_VulnDriver_Psmounterex_e3f3ba72 {
     meta:
@@ -41754,6 +42535,30 @@ rule Windows_VulnDriver_Razer_31d4018e {
         $str2 = "Razer Overlay Support" wide
     condition:
         int16(uint32(0x3C) + 0x5c) == 0x0001 and $subject_name and $original_file_name and $version and $str1 and $str2
+}
+
+rule Windows_VulnDriver_Razer_6650648e {
+    meta:
+        author = "Elastic Security"
+        id = "6650648e-a1f8-44f4-9e80-90f0eb086d93"
+        fingerprint = "b2a1e123a39725b3df191016b3ab5b25f07038b2fdd490af38db4f9d8aa81016"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Name: Rzpnk.sys, Version: <= 1.0.12.7465"
+        threat_name = "Windows.VulnDriver.Razer"
+        reference_sample = "71f5631b956a11e2350ba83b7ca69bac10685c8c820e3a45e00d2ed168f8c3b6"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 52 00 7A 00 70 00 6E 00 6B 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x00][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x00][\x00-\x00][\x01-\x01][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\x0b][\x00-\x00]|[\x00-\x00][\x00-\x00][\x01-\x01][\x00-\x00]([\x00-\xff][\x00-\x00]|[\x00-\xff][\x01-\x1c]|[\x00-\x28][\x1d-\x1d])[\x0c-\x0c][\x00-\x00]|[\x00-\x00][\x00-\x00][\x01-\x01][\x00-\x00][\x29-\x29][\x1d-\x1d][\x0c-\x0c][\x00-\x00])/
+        $str1 = "Rzpnk.pdb"
+        $str2 = "Razer Overlay Support" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $original_file_name and $version and $str1 and $str2
 }
 
 // ---- Windows_VulnDriver_Realtek.yar ----
@@ -43237,6 +44042,33 @@ rule Windows_VulnDriver_SecurStar_35bd6206 {
         int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $str1 and $str2 and $str3 and $str4 and $str5
 }
 
+// ---- Windows_VulnDriver_Segurazo.yar ----
+rule Windows_VulnDriver_Segurazo_955f5c75 {
+    meta:
+        author = "Elastic Security"
+        id = "955f5c75-cf8f-41c6-b029-d3d778e43d6a"
+        fingerprint = "5a2d7a5e785b1bec6d2e2ad9d1ebe238e20b31815294f1d595ea9963612a24cc"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-28"
+        description = "Segurazo kernel driver with exposed IOCTL for process termination (0x999920DF)"
+        threat_name = "Windows.VulnDriver.Segurazo"
+        reference_sample = "9c84c22000de947c0551c46f04a1ee6f1e8d412aa3eefeb4533d13d144dbf583"
+        severity = 100
+        arch_context = "x86"
+        scan_context = "file, memory"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 73 00 61 00 6E 00 74 00 69 00 76 00 69 00 72 00 75 00 73 00 6B 00 64 00 2E 00 73 00 79 00 73 00 }
+        $product_name = { 50 00 72 00 6F 00 64 00 75 00 63 00 74 00 4E 00 61 00 6D 00 65 00 00 00 00 00 41 00 6E 00 74 00 69 00 76 00 69 00 72 00 75 00 73 00 20 00 44 00 72 00 69 00 76 00 65 00 72 00 }
+        $product_version = { 50 00 72 00 6F 00 64 00 75 00 63 00 74 00 56 00 65 00 72 00 73 00 69 00 6F 00 6E 00 00 00 31 00 2E 00 30 00 2E 00 31 00 2E 00 36 00 00 }
+        $ioctl_df = { 81 FF DF 20 99 99 }
+        $imp_terminate = "ZwTerminateProcess" ascii fullword
+        $pdb = "SegurazoKD64.pdb" ascii fullword
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $original_file_name and $product_name and $product_version and $ioctl_df and $imp_terminate and $pdb
+}
+
 // ---- Windows_VulnDriver_Segwin.yar ----
 rule Windows_VulnDriver_Segwin_04a3962e {
     meta:
@@ -43667,6 +44499,33 @@ rule Windows_VulnDriver_SmSerl64_00319890 {
         $str3 = "Motorola SM56 Modem WDM Driver" wide
     condition:
         int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $original_file_name and $version and $str1 and $str2 and $str3
+}
+
+// ---- Windows_VulnDriver_Snxpsamd.yar ----
+rule Windows_VulnDriver_Snxpsamd_19be62e9 {
+    meta:
+        author = "Elastic Security"
+        id = "19be62e9-7d9c-41c7-b78d-4d133dd1c4cd"
+        fingerprint = "b571cf4b1bb67c204de2620a8def1503fa26ebc8749950f88bd2f5400a849c93"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: SUNIX CO., LTD., Version: <= 10.1.0.0"
+        threat_name = "Windows.VulnDriver.Snxpsamd"
+        reference_sample = "1eaaa7dd2f187a5f25600f6fc6c8f0b905d9e6aeacd0803643ae58367354a513"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 53 55 4E 49 58 20 43 4F 2E 2C 20 4C 54 44 2E }
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 73 00 6E 00 78 00 70 00 73 00 61 00 6D 00 64 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x09][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x00][\x00-\x00][\x0a-\x0a][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x01-\x01][\x00-\x00][\x0a-\x0a][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00])/
+        $str1 = "snxpsamd.pdb"
+        $str2 = "SUNIX Multi I/O Card" wide
+        $str3 = "SUNIX Serial Driver (x64)" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2 and $str3
 }
 
 // ---- Windows_VulnDriver_Sokno.yar ----
@@ -44240,6 +45099,58 @@ rule Windows_VulnDriver_Symantec_7d07ca3a {
         int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2 and $str3
 }
 
+rule Windows_VulnDriver_Symantec_9a536ae6 {
+    meta:
+        author = "Elastic Security"
+        id = "9a536ae6-0175-4af6-8d8c-0baf1a663c28"
+        fingerprint = "b399d74e6ffab3e933cdd70a66c9f4c1a6c9e05dd1552485af70013aaff1582c"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: Broadcom Inc, Version: <= 11.0.1.640"
+        threat_name = "Windows.VulnDriver.Symantec"
+        reference_sample = "02579d833200abb641e476468bafd1f07d448f3d232f70cc34e2adad402b5c75"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 42 72 6F 61 64 63 6F 6D 20 49 6E 63 }
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 50 00 47 00 50 00 77 00 64 00 65 00 64 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x0a][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x00][\x00-\x00][\x0b-\x0b][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\x00][\x00-\x00]|[\x00-\x00][\x00-\x00][\x0b-\x0b][\x00-\x00]([\x00-\xff][\x00-\x00]|[\x00-\xff][\x01-\x01]|[\x00-\x7f][\x02-\x02])[\x01-\x01][\x00-\x00]|[\x00-\x00][\x00-\x00][\x0b-\x0b][\x00-\x00][\x80-\x80][\x02-\x02][\x01-\x01][\x00-\x00])/
+        $str1 = "PGPwded.pdb"
+        $str2 = "Symantec Encryption Desktop" wide
+        $str3 = "PGPwde NT/Win2k driver" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2 and $str3
+}
+
+rule Windows_VulnDriver_Symantec_2a989e3c {
+    meta:
+        author = "Elastic Security"
+        id = "2a989e3c-3f2c-41e1-b8bb-cf14c308e59b"
+        fingerprint = "69c132b86f978330a2ec000682f64402c3ec59ed63cb6d50345ae36df2f9d26c"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: Symantec Corporation, Version: <= 10.4.2.463"
+        threat_name = "Windows.VulnDriver.Symantec"
+        reference_sample = "5247d4ab237e8fc486ce95d018bd92074b2a8cf1af351cd699a5b4a9355c7071"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 53 79 6D 61 6E 74 65 63 20 43 6F 72 70 6F 72 61 74 69 6F 6E }
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 50 00 47 00 50 00 77 00 64 00 65 00 64 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x09][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x03][\x00-\x00][\x0a-\x0a][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x04-\x04][\x00-\x00][\x0a-\x0a][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\x01][\x00-\x00]|[\x04-\x04][\x00-\x00][\x0a-\x0a][\x00-\x00]([\x00-\xff][\x00-\x00]|[\x00-\xce][\x01-\x01])[\x02-\x02][\x00-\x00]|[\x04-\x04][\x00-\x00][\x0a-\x0a][\x00-\x00][\xcf-\xcf][\x01-\x01][\x02-\x02][\x00-\x00])/
+        $str1 = "PGPwded.pdb"
+        $str2 = "Symantec Encryption Desktop" wide
+        $str3 = "PGPwde NT/Win2k driver" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2 and $str3
+}
+
 // ---- Windows_VulnDriver_SysDrv3S.yar ----
 rule Windows_VulnDriver_SysDrv3S_a3bb49e6 {
     meta:
@@ -44424,6 +45335,32 @@ rule Windows_VulnDriver_Tboflhelper_413ac8c7 {
         $str2 = "TBOFLHelper" wide
     condition:
         int16(uint32(0x3C) + 0x5c) == 0x0001 and $subject_name and $original_file_name and $version and $str1 and $str2
+}
+
+// ---- Windows_VulnDriver_Tbprotect.yar ----
+rule Windows_VulnDriver_Tbprotect_23384d83 {
+    meta:
+        author = "Elastic Security"
+        id = "23384d83-b102-4447-ac50-bb876ef7587e"
+        fingerprint = "fd3b8da656a18fe9c206410345bb8a9aa0fb2914cb5d03e328a01c71e973edd6"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: Microsoft Windows Hardware Compatibility Publisher, Version: <= 1.0.0.0"
+        threat_name = "Windows.VulnDriver.Tbprotect"
+        reference_sample = "0940efbca0e3d0762bd748986d1e5e5dfcab876bc8df7449e59f797e3b5e1519"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 4D 69 63 72 6F 73 6F 66 74 20 57 69 6E 64 6F 77 73 20 48 61 72 64 77 61 72 65 20 43 6F 6D 70 61 74 69 62 69 6C 69 74 79 20 50 75 62 6C 69 73 68 65 72 }
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 74 00 62 00 70 00 72 00 6F 00 74 00 65 00 63 00 74 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x00][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x00][\x00-\x00][\x01-\x01][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00])/
+        $str1 = "tbprotect64.pdb"
+        $str2 = "tbprotect" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2
 }
 
 // ---- Windows_VulnDriver_TenAsys.yar ----
@@ -46079,6 +47016,33 @@ rule Windows_VulnDriver_Wfshbr64_624ed974 {
         int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version
 }
 
+// ---- Windows_VulnDriver_WibuKey64.yar ----
+rule Windows_VulnDriver_WibuKey64_6cfaa7de {
+    meta:
+        author = "Elastic Security"
+        id = "6cfaa7de-4365-4a89-b0b5-9ebdb73efd9c"
+        fingerprint = "df1a379aa2edc6b6020fdf6a414fdb8dd1c5145ffb6ce51de9cc335d051ad99f"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: WIBU-SYSTEMS AG, Version: <= 6.50.3314.501"
+        threat_name = "Windows.VulnDriver.WibuKey64"
+        reference_sample = "7ab52ce255f4ee1d192e9a3cc0b836eaea10bd3c2d0d732519eb2f5968617ffd"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 57 49 42 55 2D 53 59 53 54 45 4D 53 20 41 47 }
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 57 00 69 00 62 00 75 00 4B 00 65 00 79 00 36 00 34 00 2E 00 53 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x05][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x31][\x00-\x00][\x06-\x06][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x32-\x32][\x00-\x00][\x06-\x06][\x00-\x00][\x00-\xff][\x00-\xff]([\x00-\xff][\x00-\x00]|[\x00-\xff][\x01-\x0b]|[\x00-\xf1][\x0c-\x0c])|[\x32-\x32][\x00-\x00][\x06-\x06][\x00-\x00]([\x00-\xff][\x00-\x00]|[\x00-\xf4][\x01-\x01])[\xf2-\xf2][\x0c-\x0c]|[\x32-\x32][\x00-\x00][\x06-\x06][\x00-\x00][\xf5-\xf5][\x01-\x01][\xf2-\xf2][\x0c-\x0c])/
+        $str1 = "WibuKey64.pdb"
+        $str2 = "WibuKey Software Protection System" wide
+        $str3 = "WibuKey Windows NT Kernel Driver" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2 and $str3
+}
+
 // ---- Windows_VulnDriver_WinFlash.yar ----
 rule Windows_VulnDriver_WinFlash_881758da {
     meta:
@@ -46911,6 +47875,55 @@ rule Windows_VulnDriver_Xhunter_197ce145 {
         int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2 and $str3
 }
 
+rule Windows_VulnDriver_Xhunter_82d298ea {
+    meta:
+        author = "Elastic Security"
+        id = "82d298ea-b18d-47b1-a309-5f8c6baecd9e"
+        fingerprint = "ec35af7115ab67958c07193f53cfc56f0c1bf6dcbcc3a3b69f01e6c60011772d"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Name: xhunter1.sys, Version: <= 3.4.2.150"
+        threat_name = "Windows.VulnDriver.Xhunter"
+        reference_sample = "3f12ec735d52e1096c88a64e0ab5a3adde242a91fd742c901d58b5e5dc4cb6c8"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 78 00 68 00 75 00 6E 00 74 00 65 00 72 00 31 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x02][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x03][\x00-\x00][\x03-\x03][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x04-\x04][\x00-\x00][\x03-\x03][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\x01][\x00-\x00]|[\x04-\x04][\x00-\x00][\x03-\x03][\x00-\x00][\x00-\x95][\x00-\x00][\x02-\x02][\x00-\x00]|[\x04-\x04][\x00-\x00][\x03-\x03][\x00-\x00][\x96-\x96][\x00-\x00][\x02-\x02][\x00-\x00])/
+        $str1 = "xhunter64.pdb"
+        $str2 = "XIGNCODE3" wide
+        $str3 = "XIGNCODE3 System Guard" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $original_file_name and $version and $str1 and $str2 and $str3
+}
+
+rule Windows_VulnDriver_Xhunter_b3a5ed35 {
+    meta:
+        author = "Elastic Security"
+        id = "b3a5ed35-94b9-439c-a12b-606d30602fd3"
+        fingerprint = "d22746d8f8c510102f53cde1481dc9d1c21e30c2f54072c246ad15f351c1daba"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: Wellbia.com Co., Ltd., Version: <= 2026.6.1.192"
+        threat_name = "Windows.VulnDriver.Xhunter"
+        reference_sample = "44cefb0b3b6516e6731de09a3e2e0eb8b98b02cc3fdf7bb4b22680e93f3cde1e"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 57 65 6C 6C 62 69 61 2E 63 6F 6D 20 43 6F 2E 2C 20 4C 74 64 2E }
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 78 00 68 00 75 00 6E 00 74 00 65 00 72 00 31 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff]([\x00-\xff][\x00-\x00]|[\x00-\xff][\x01-\x06]|[\x00-\xe9][\x07-\x07])[\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x05][\x00-\x00][\xea-\xea][\x07-\x07][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x06-\x06][\x00-\x00][\xea-\xea][\x07-\x07][\x00-\xff][\x00-\xff][\x00-\x00][\x00-\x00]|[\x06-\x06][\x00-\x00][\xea-\xea][\x07-\x07][\x00-\xbf][\x00-\x00][\x01-\x01][\x00-\x00]|[\x06-\x06][\x00-\x00][\xea-\xea][\x07-\x07][\xc0-\xc0][\x00-\x00][\x01-\x01][\x00-\x00])/
+        $str1 = "Wellbia.com System Guard" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1
+}
+
 // ---- Windows_VulnDriver_Xkpsm.yar ----
 rule Windows_VulnDriver_Xkpsm_60db27b6 {
     meta:
@@ -46929,6 +47942,30 @@ rule Windows_VulnDriver_Xkpsm_60db27b6 {
         os = "windows"
     strings:
         $subject_name = { 06 03 55 04 03 [2] 4A 69 72 61 6E 4A 69 6B 79 6F 73 6F 66 74 20 63 6F 2E 2C 20 6C 74 64 2E }
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 78 00 6B 00 70 00 73 00 6D 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x02][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x00][\x00-\x00][\x03-\x03][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00]|[\x00-\x00][\x00-\x00][\x03-\x03][\x00-\x00][\x01-\x01][\x00-\x00][\x00-\x00][\x00-\x00])/
+        $str1 = "xkpsm.pdb"
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1
+}
+
+rule Windows_VulnDriver_Xkpsm_57f15dd2 {
+    meta:
+        author = "Elastic Security"
+        id = "57f15dd2-9672-48b5-86df-02f86ec6a142"
+        fingerprint = "8fa6dbfe206f83fb7f4ef9626cace25d2fb6b8201e8bc4094a4c2ea06196fab2"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: Microsoft Windows, Version: <= 3.0.0.1"
+        threat_name = "Windows.VulnDriver.Xkpsm"
+        reference_sample = "b122b982ca271a4ff15c756b3ceb1c18facee2a9d5a34483b490746a124a935f"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 4D 69 63 72 6F 73 6F 66 74 20 57 69 6E 64 6F 77 73 }
         $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 78 00 6B 00 70 00 73 00 6D 00 2E 00 73 00 79 00 73 00 00 00 }
         $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x02][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x00][\x00-\x00][\x03-\x03][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00][\x00-\x00]|[\x00-\x00][\x00-\x00][\x03-\x03][\x00-\x00][\x01-\x01][\x00-\x00][\x00-\x00][\x00-\x00])/
         $str1 = "xkpsm.pdb"
@@ -47432,6 +48469,33 @@ rule Windows_VulnDriver_Zemana_74cfef25 {
         $str4 = "Audit drv" wide
     condition:
         int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $version and $str1 and $str2 and $str3 and $str4
+}
+
+// ---- Windows_VulnDriver_Zntport.yar ----
+rule Windows_VulnDriver_Zntport_96b0c542 {
+    meta:
+        author = "Elastic Security"
+        id = "96b0c542-0006-46dc-9144-2ba591289297"
+        fingerprint = "c11de9103c400567cca106588745d118b36149cf8258e8c97f1976cba9b9d956"
+        creation_date = "2026-09-09"
+        last_modified = "2026-09-25"
+        description = "Subject: CLEVO CO., Version: <= 2.8.3.1"
+        threat_name = "Windows.VulnDriver.Zntport"
+        reference_sample = "c653fe66aeb6170899ad8b405b7550e247490a2366bda828bfa3b2a2dc18fa91"
+        severity = 50
+        arch_context = "x86"
+        scan_context = "file"
+        license = "Elastic License v2"
+        os = "windows"
+    strings:
+        $subject_name = { 06 03 55 04 03 [2] 43 4C 45 56 4F 20 43 4F 2E }
+        $original_file_name = { 4F 00 72 00 69 00 67 00 69 00 6E 00 61 00 6C 00 46 00 69 00 6C 00 65 00 6E 00 61 00 6D 00 65 00 00 00 7A 00 6E 00 74 00 70 00 6F 00 72 00 74 00 2E 00 73 00 79 00 73 00 00 00 }
+        $version = /V\x00S\x00_\x00V\x00E\x00R\x00S\x00I\x00O\x00N\x00_\x00I\x00N\x00F\x00O\x00\x00\x00{0,4}\xbd\x04\xef\xfe[\x00-\xff]{4}([\x00-\xff][\x00-\xff][\x00-\x01][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x00-\x07][\x00-\x00][\x02-\x02][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\xff][\x00-\xff]|[\x08-\x08][\x00-\x00][\x02-\x02][\x00-\x00][\x00-\xff][\x00-\xff][\x00-\x02][\x00-\x00]|[\x08-\x08][\x00-\x00][\x02-\x02][\x00-\x00][\x00-\x00][\x00-\x00][\x03-\x03][\x00-\x00]|[\x08-\x08][\x00-\x00][\x02-\x02][\x00-\x00][\x01-\x01][\x00-\x00][\x03-\x03][\x00-\x00])/
+        $str1 = "zntport.pdb"
+        $str2 = "NTPort Library" wide
+        $str3 = "NTPort Library kernel driver" wide
+    condition:
+        int16(uint32(0x3C) + 0x5c) == 0x0001 and int16(uint32(0x3C) + 0x18) == 0x020b and $subject_name and $original_file_name and $version and $str1 and $str2 and $str3
 }
 
 // ---- Windows_VulnDriver_Zuhaowan.yar ----

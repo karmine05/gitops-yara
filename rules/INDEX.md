@@ -1,6 +1,6 @@
 # Rule index
 
-Builds rules from `https://github.com/elastic/protections-artifacts.git` @ `ce99f77ba7cc` and `https://github.com/magicsword-io/LOLDrivers.git` @ `9fa32adeab86`, 2026-09-28.
+Builds rules from `https://github.com/elastic/protections-artifacts.git` @ `ccefbba2b649` and `https://github.com/magicsword-io/LOLDrivers.git` @ `8aafc14fa833`, 2026-10-05.
 
 Pass any `sigurl` below to `yara_file` or `yara_process`. One allowlist
 entry in agent options covers this whole tree.
@@ -44,14 +44,14 @@ entry in agent options covers this whole tree.
 
 | File | Rules | Size | sigurl |
 |---|---:|---:|---|
-| `windows/_all.yar` | 2029 | 2489 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/_all.yar` |
+| `windows/_all.yar` | 2072 | 2551 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/_all.yar` |
 | `windows/attacksimulation.yar` | 1 | 1 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/attacksimulation.yar` |
 | `windows/backdoor.yar` | 4 | 5 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/backdoor.yar` |
 | `windows/clickfraud.yar` | 1 | 1 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/clickfraud.yar` |
 | `windows/cryptominer.yar` | 2 | 2 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/cryptominer.yar` |
 | `windows/exploit.yar` | 11 | 10 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/exploit.yar` |
 | `windows/generic.yar` | 318 | 246 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/generic.yar` |
-| `windows/hacktool.yar` | 69 | 81 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/hacktool.yar` |
+| `windows/hacktool.yar` | 79 | 91 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/hacktool.yar` |
 | `windows/infostealer.yar` | 5 | 5 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/infostealer.yar` |
 | `windows/loldrivers_maldriver.yar` | 48 | 119 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/loldrivers_maldriver.yar` |
 | `windows/loldrivers_vulndriver.yar` | 744 | 1532 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/loldrivers_vulndriver.yar` |
@@ -59,11 +59,11 @@ entry in agent options covers this whole tree.
 | `windows/pup.yar` | 3 | 3 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/pup.yar` |
 | `windows/ransomware.yar` | 99 | 106 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/ransomware.yar` |
 | `windows/remoteadmin.yar` | 1 | 1 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/remoteadmin.yar` |
-| `windows/rootkit.yar` | 100 | 136 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/rootkit.yar` |
+| `windows/rootkit.yar` | 103 | 140 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/rootkit.yar` |
 | `windows/shellcode.yar` | 6 | 5 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/shellcode.yar` |
-| `windows/trojan.yar` | 513 | 530 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/trojan.yar` |
+| `windows/trojan.yar` | 519 | 536 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/trojan.yar` |
 | `windows/virus.yar` | 3 | 3 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/virus.yar` |
-| `windows/vulndriver.yar` | 833 | 1288 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/vulndriver.yar` |
+| `windows/vulndriver.yar` | 857 | 1330 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/vulndriver.yar` |
 | `windows/wiper.yar` | 4 | 4 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/wiper.yar` |
 
 ## multi
