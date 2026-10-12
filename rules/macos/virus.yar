@@ -4,8 +4,8 @@
  *
  * sigurl:    https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos/virus.yar
  * Source:    https://github.com/elastic/protections-artifacts.git
- * Commit:    ccefbba2b6498316f2e62b7675563971b83f8fb2
- * Generated: 2026-10-05
+ * Commit:    955723319e62a7e4095d256355b095a7594ff48c
+ * Generated: 2026-10-12
  * Rules:     7   Upstream files: 3
  *
  * Upstream rules are licensed under the Elastic License 2.0.
