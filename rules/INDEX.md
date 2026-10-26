@@ -1,6 +1,6 @@
 # Rule index
 
-Builds rules from `https://github.com/elastic/protections-artifacts.git` @ `955723319e62` and `https://github.com/magicsword-io/LOLDrivers.git` @ `f1ba73291587`, 2026-10-19.
+Builds rules from `https://github.com/elastic/protections-artifacts.git` @ `c7b3b2eb7fe9` and `https://github.com/magicsword-io/LOLDrivers.git` @ `96a491d410f8`, 2026-10-26.
 
 Pass any `sigurl` below to `yara_file` or `yara_process`. One allowlist
 entry in agent options covers this whole tree.
@@ -9,14 +9,14 @@ entry in agent options covers this whole tree.
 
 | File | Rules | Size | sigurl |
 |---|---:|---:|---|
-| `macos/_all.yar` | 150 | 150 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos/_all.yar` |
+| `macos/_all.yar` | 151 | 152 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos/_all.yar` |
 | `macos/backdoor.yar` | 7 | 6 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos/backdoor.yar` |
 | `macos/creddump.yar` | 1 | 1 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos/creddump.yar` |
 | `macos/cryptominer.yar` | 4 | 3 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos/cryptominer.yar` |
 | `macos/exploit.yar` | 1 | 1 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos/exploit.yar` |
 | `macos/hacktool.yar` | 3 | 4 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos/hacktool.yar` |
 | `macos/infostealer.yar` | 12 | 17 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos/infostealer.yar` |
-| `macos/trojan.yar` | 60 | 50 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos/trojan.yar` |
+| `macos/trojan.yar` | 61 | 51 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos/trojan.yar` |
 | `macos/virus.yar` | 7 | 5 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/macos/virus.yar` |
 
 ## linux
@@ -53,7 +53,7 @@ entry in agent options covers this whole tree.
 | `windows/generic.yar` | 318 | 246 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/generic.yar` |
 | `windows/hacktool.yar` | 79 | 91 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/hacktool.yar` |
 | `windows/infostealer.yar` | 5 | 5 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/infostealer.yar` |
-| `windows/loldrivers_maldriver.yar` | 48 | 119 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/loldrivers_maldriver.yar` |
+| `windows/loldrivers_maldriver.yar` | 49 | 121 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/loldrivers_maldriver.yar` |
 | `windows/loldrivers_vulndriver.yar` | 744 | 1532 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/loldrivers_vulndriver.yar` |
 | `windows/packer.yar` | 1 | 1 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/packer.yar` |
 | `windows/pup.yar` | 3 | 3 KB | `https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/windows/pup.yar` |
