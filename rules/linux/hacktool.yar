@@ -5,7 +5,7 @@
  * sigurl:    https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/linux/hacktool.yar
  * Source:    https://github.com/elastic/protections-artifacts.git
  * Commit:    c7b3b2eb7fe9a0c73282003d81da4c0e2d32941d
- * Generated: 2026-10-26
+ * Generated: 2026-11-02
  * Rules:     58   Upstream files: 15
  *
  * Upstream rules are licensed under the Elastic License 2.0.
