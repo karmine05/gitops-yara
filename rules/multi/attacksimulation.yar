@@ -5,7 +5,7 @@
  * sigurl:    https://raw.githubusercontent.com/karmine05/gitops-yara/main/rules/multi/attacksimulation.yar
  * Source:    https://github.com/elastic/protections-artifacts.git
  * Commit:    a87715d87a2babd51b37ff6c55f104fe7e567911
- * Generated: 2026-11-09
+ * Generated: 2026-11-16
  * Rules:     1   Upstream files: 1
  *
  * Upstream rules are licensed under the Elastic License 2.0.
